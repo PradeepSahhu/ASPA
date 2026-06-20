@@ -28,6 +28,15 @@ The database schema has been defined using Prisma ORM. To initialize the databas
    npx prisma generate
    ```
 
+### How `DATABASE_URL` Is Used
+
+With Prisma 7 and the `@prisma/adapter-pg` driver adapter, `DATABASE_URL` is consumed by two separate systems at different stages:
+
+| Where                                           | Reads `DATABASE_URL` for                | When           |
+| ----------------------------------------------- | --------------------------------------- | -------------- |
+| `schema.prisma` / `prisma.config.ts` datasource | Prisma CLI: migrate, generate, db push  | dev/build time |
+| `index.js` → `PrismaPg({ connectionString })`   | Your app's live queries via the pg pool | runtime        |
+
 ## Database Models & API Documentation
 
 The application uses the following Prisma models:
