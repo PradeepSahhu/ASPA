@@ -6,23 +6,28 @@ import prisma from "../utility/database/index.js";
 
 const Authenticate = async (req, _, next) => {
   try {
-    const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+    const token =
+      req.cookies?.accessToken ||
+      req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
       throw new ApiError(401, "unauthorized");
     }
 
     console.log(process.env.ACCESS_TOKEN_SECRET);
+    console.log("the token is : ", token);
 
     const decodedtoken = await jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET,
     );
 
-    const author = await prisma.author.findUnique({where: {id:decodedtoken?.id}});
+    const author = await prisma.author.findUnique({
+      where: { id: decodedtoken?._id },
+    });
 
-    if(!author){
-      throw
+    if (!author) {
+      throw new ApiError(API_CODE.INTERNAL_SERVER_ERROR, "", "");
     }
 
     req.author = author;

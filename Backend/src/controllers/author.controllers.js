@@ -1,3 +1,4 @@
+import { ApiError } from "../utility/api.error.js";
 import { ApiResponse } from "../utility/api.response.js";
 import { API_CODE } from "../utility/constants/api.constants.js";
 import prisma from "../utility/database/index.js";
@@ -71,7 +72,7 @@ const AuthorSignUp = async (req, res) => {
 
   const author = await prisma.author.create({
     data: {
-      id,
+      ...(id && { id }),
       name: username,
       email,
       password,
@@ -94,4 +95,22 @@ const AuthorSignUp = async (req, res) => {
     );
 };
 
-export { AuthorLogin, AuthorSignUp };
+const AuthorLogout = async (req, res) => {
+  const author = req.author;
+
+  if (!author) {
+    return new ApiError(API_CODE.FORBIDDEN, "", "Failed");
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .json(new ApiResponse(200, {}, "user Logged Out"));
+};
+
+export { AuthorLogin, AuthorSignUp, AuthorLogout };

@@ -16,9 +16,9 @@ model Author {
   name          String
   email         String   @unique
   password      String
-  phone         String
-  city          String
-  accountNumber String   @map("account_number")
+  phone         String?
+  city          String?
+  accountNumber String?  @map("account_number")
   joinedDate    DateTime @map("joined_date")
   updatedDate   DateTime @updatedAt @map("updated_date")
   books         Book[]
@@ -32,7 +32,7 @@ model Admin {
   name        String
   email       String       @unique
   password    String
-  contactInfo String       @map("contact_info")
+  contactInfo String?      @map("contact_info")
   joinedDate  DateTime     @map("joined_date")
   updatedDate DateTime     @updatedAt @map("updated_date")
   assigned    Ticket[]
@@ -45,16 +45,16 @@ model Book {
   id                    String    @id @default(cuid())
   authorId              String    @map("author_id")
   title                 String    @map("title")
-  isbn                  String    @unique @map("isbn")
+  isbn                  String?   @unique @map("isbn")
   status                String
   genre                 String
   publicationDate       DateTime? @map("publication_date")
   mrp                   Float
-  authorRoyaltyPerCopy  Float     @map("author_royalty_per_copy")
-  totalCopiesSold       Int       @default(0) @map("total_copies_sold")
-  totalRoyaltyEarned    Float     @default(0) @map("total_royalty_earned")
-  royaltyPaid           Float     @default(0) @map("royalty_paid")
-  royaltyPending        Float     @default(0) @map("royalty_pending")
+  authorRoyaltyPerCopy  Float?    @map("author_royalty_per_copy")
+  totalCopiesSold       Int?      @default(0) @map("total_copies_sold")
+  totalRoyaltyEarned    Float?    @default(0) @map("total_royalty_earned")
+  royaltyPaid           Float?    @default(0) @map("royalty_paid")
+  royaltyPending        Float?    @default(0) @map("royalty_pending")
   lastRoyaltyPayoutDate DateTime? @map("last_royalty_payout_date")
   printPartner          String?   @map("print_partner")
   availableOn           String[]  @default([]) @map("available_on")
