@@ -6,10 +6,14 @@ const AuthorLogin = async (req, res) => {
 
   console.log(email, password);
   if (!email || !password) {
-    return new ApiResponse(API_CODE.BAD_REQUEST, "", "Bad Request");
+    return res
+      .status(API_CODE.BAD_REQUEST)
+      .json(new ApiResponse(API_CODE.BAD_REQUEST, "", "Bad Request"));
   }
 
-  return new ApiResponse(API_CODE.ACCEPTED, { user: "Pradeep" }, "success");
+  return res
+    .status(API_CODE.ACCEPTED)
+    .json(new ApiResponse(API_CODE.ACCEPTED, { user: "Pradeep" }, "success"));
 };
 
 export { AuthorLogin };

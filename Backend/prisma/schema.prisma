@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/models"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Author {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  phone         String
+  city          String
+  accountNumber String   @map("account_number")
+  joinedDate    DateTime @map("joined_date")
+  updatedDate   DateTime @updatedAt @map("updated_date")
+  books         Book[]
+  tickets       Ticket[]
+
+  @@map("authors")
+}
+
+model Admin {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  password    String
+  contactInfo String       @map("contact_info")
+  joinedDate  DateTime     @map("joined_date")
+  updatedDate DateTime     @updatedAt @map("updated_date")
+  assigned    Ticket[]
+  ticketNotes TicketNote[]
+
+  @@map("admins")
+}
+
+model Book {
+  id                    String    @id @default(cuid())
+  authorId              String    @map("author_id")
+  title                 String    @map("title")
+  isbn                  String    @unique @map("isbn")
+  status                String
+  genre                 String
+  publicationDate       DateTime? @map("publication_date")
+  mrp                   Float
+  authorRoyaltyPerCopy  Float     @map("author_royalty_per_copy")
+  totalCopiesSold       Int       @default(0) @map("total_copies_sold")
+  totalRoyaltyEarned    Float     @default(0) @map("total_royalty_earned")
+  royaltyPaid           Float     @default(0) @map("royalty_paid")
+  royaltyPending        Float     @default(0) @map("royalty_pending")
+  lastRoyaltyPayoutDate DateTime? @map("last_royalty_payout_date")
+  printPartner          String?   @map("print_partner")
+  availableOn           String[]  @default([]) @map("available_on")
+  createdDate           DateTime  @default(now()) @map("created_date")
+  updatedDate           DateTime  @updatedAt @map("updated_date")
+  author                Author    @relation(fields: [authorId], references: [id])
+  tickets               Ticket[]
+
+  @@map("books")
+}
+
+model Ticket {
+  id                String          @id @default(cuid())
+  authorId          String          @map("author_id")
+  category          String
+  bookId            String?         @map("book_id")
+  header            String
+  detailDescription String          @map("detail_description")
+  status            String
+  assignedId        String?         @map("assigned_id")
+  priorityScore     Int?            @map("priority_score")
+  aiDraft           String?         @map("ai_draft")
+  createdDate       DateTime        @default(now()) @map("created_date")
+  updatedDate       DateTime        @updatedAt @map("updated_date")
+  resolvedDate      DateTime?       @map("resolved_date")
+  author            Author          @relation(fields: [authorId], references: [id])
+  book              Book?           @relation(fields: [bookId], references: [id])
+  assignedAdmin     Admin?          @relation(fields: [assignedId], references: [id])
+  notes             TicketNote[]
+  messages          TicketMessage[]
+
+  @@map("tickets")
+}
+
+model TicketNote {
+  id         String @id @default(cuid())
+  ticketId   String @map("ticket_id")
+  adminId    String @map("admin_id")
+  message    String
+  visibility String
+  ticket     Ticket @relation(fields: [ticketId], references: [id])
+  admin      Admin  @relation(fields: [adminId], references: [id])
+
+  @@map("ticket_notes")
+}
+
+model TicketMessage {
+  id            String        @id @default(cuid())
+  ticketId      String        @map("ticket_id")
+  responseActor ResponseActor @map("response_actor")
+  message       String
+  createdAt     DateTime      @default(now()) @map("created_at")
+  ticket        Ticket        @relation(fields: [ticketId], references: [id])
+
+  @@map("ticket_messages")
+}
+
+enum ResponseActor {
+  AUTHOR
+  LLM
+  ADMIN
+}

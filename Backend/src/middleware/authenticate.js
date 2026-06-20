@@ -11,9 +11,12 @@ const Authenticate = async (req, _, next) => {
       throw new ApiError(401, "unauthorized");
     }
 
-    console.log(process.env.SECRET);
+    console.log(process.env.ACCESS_TOKEN_SECRET);
 
-    const decodedtoken = await jwt.verify(token, process.env.SECRET);
+    const decodedtoken = await jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET,
+    );
 
     next();
   } catch (error) {
