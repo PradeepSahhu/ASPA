@@ -42,25 +42,25 @@ model Admin {
 }
 
 model Book {
-  id                    String    @id @default(cuid())
-  authorId              String    @map("author_id")
-  title                 String    @map("title")
-  isbn                  String?   @unique @map("isbn")
-  status                String
+  id                    String     @id @default(cuid())
+  authorId              String     @map("author_id")
+  title                 String     @map("title")
+  isbn                  String?    @unique @map("isbn")
+  status                BookStatus @default(DRAFT)
   genre                 String
-  publicationDate       DateTime? @map("publication_date")
+  publicationDate       DateTime?  @map("publication_date")
   mrp                   Float
-  authorRoyaltyPerCopy  Float?    @map("author_royalty_per_copy")
-  totalCopiesSold       Int?      @default(0) @map("total_copies_sold")
-  totalRoyaltyEarned    Float?    @default(0) @map("total_royalty_earned")
-  royaltyPaid           Float?    @default(0) @map("royalty_paid")
-  royaltyPending        Float?    @default(0) @map("royalty_pending")
-  lastRoyaltyPayoutDate DateTime? @map("last_royalty_payout_date")
-  printPartner          String?   @map("print_partner")
-  availableOn           String[]  @default([]) @map("available_on")
-  createdDate           DateTime  @default(now()) @map("created_date")
-  updatedDate           DateTime  @updatedAt @map("updated_date")
-  author                Author    @relation(fields: [authorId], references: [id])
+  authorRoyaltyPerCopy  Float?     @map("author_royalty_per_copy")
+  totalCopiesSold       Int?       @default(0) @map("total_copies_sold")
+  totalRoyaltyEarned    Float?     @default(0) @map("total_royalty_earned")
+  royaltyPaid           Float?     @default(0) @map("royalty_paid")
+  royaltyPending        Float?     @default(0) @map("royalty_pending")
+  lastRoyaltyPayoutDate DateTime?  @map("last_royalty_payout_date")
+  printPartner          String?    @map("print_partner")
+  availableOn           String[]   @default([]) @map("available_on")
+  createdDate           DateTime   @default(now()) @map("created_date")
+  updatedDate           DateTime   @updatedAt @map("updated_date")
+  author                Author     @relation(fields: [authorId], references: [id])
   tickets               Ticket[]
 
   @@map("books")
@@ -116,4 +116,20 @@ enum ResponseActor {
   AUTHOR
   LLM
   ADMIN
+}
+
+enum BookStatus {
+  DRAFT
+  MANUSCRIPT_RECEIVED
+  EDITING
+  COVER_DESIGN
+  TYPESETTING
+  PROOFREADING
+  ISBN_ASSIGNMENT
+  PRINTING
+  DISTRIBUTION_SETUP
+  PUBLISHED
+  ON_HOLD
+  CANCELLED
+  ARCHIVED
 }

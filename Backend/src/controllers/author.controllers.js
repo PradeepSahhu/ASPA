@@ -84,15 +84,32 @@ const AuthorSignUp = async (req, res) => {
     },
   });
 
-  return res
-    .status(API_CODE.ACCEPTED)
-    .json(
-      new ApiResponse(
-        API_CODE.ACCEPTED,
-        { id: author.id, name: author.name, email: author.email },
-        "success",
-      ),
-    );
+  const createdAuthor = await prisma.author.findUnique({
+    where: { id: author.id },
+  });
+
+  if (!createdAuthor) {
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while registering the author",
+        ),
+      );
+  }
+
+  return res.status(API_CODE.ACCEPTED).json(
+    new ApiResponse(
+      API_CODE.ACCEPTED,
+      {
+        id: createdAuthor.id,
+        name: createdAuthor.name,
+        email: createdAuthor.email,
+      },
+      "success",
+    ),
+  );
 };
 
 const AuthorLogout = async (req, res) => {
