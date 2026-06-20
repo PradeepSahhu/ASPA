@@ -69,7 +69,7 @@ model Book {
 model Ticket {
   id                String          @id @default(cuid())
   authorId          String          @map("author_id")
-  category          String
+  category          String?
   bookId            String?         @map("book_id")
   header            String
   detailDescription String          @map("detail_description")

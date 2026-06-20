@@ -51,4 +51,24 @@ const createBook = async (req, res) => {
     .json(new ApiResponse(API_CODE.ACCEPTED, createdBook, "success"));
 };
 
-export { createBook };
+const GetBooksByUser = async (req, res) => {
+  const author = req.author;
+
+  if (!author) {
+    return res
+      .status(API_CODE.UNAUTHORIZED)
+      .json(new ApiError(API_CODE.UNAUTHORIZED, "", "Unauthorized"));
+  }
+
+  const books = await prisma.book.findMany({
+    where: { authorId: author.id },
+    orderBy: { createdDate: "desc" },
+    select: { id: true, title: true },
+  });
+
+  return res
+    .status(API_CODE.ACCEPTED)
+    .json(new ApiResponse(API_CODE.ACCEPTED, books, "Success"));
+};
+
+export { createBook, GetBooksByUser };
