@@ -1,5 +1,6 @@
 import { ApiResponse } from "../utility/api.response.js";
 import { API_CODE } from "../utility/constants/api.constants.js";
+import prisma from "../utility/database/index.js";
 
 const AuthorLogin = async (req, res) => {
   const { email, password } = req.body;
@@ -10,6 +11,10 @@ const AuthorLogin = async (req, res) => {
       .status(API_CODE.BAD_REQUEST)
       .json(new ApiResponse(API_CODE.BAD_REQUEST, "", "Bad Request"));
   }
+
+  const author = await prisma.author.findUnique({
+    where: { email: email, password: password },
+  });
 
   return res
     .status(API_CODE.ACCEPTED)

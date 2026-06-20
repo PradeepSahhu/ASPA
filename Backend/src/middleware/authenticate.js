@@ -2,10 +2,11 @@ import jwt from "jsonwebtoken";
 import { ApiError } from "../utility/api.error.js";
 import "dotenv/config";
 import { API_CODE } from "../utility/constants/api.constants.js";
+import prisma from "../utility/database/index.js";
 
 const Authenticate = async (req, _, next) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
       throw new ApiError(401, "unauthorized");
@@ -18,6 +19,14 @@ const Authenticate = async (req, _, next) => {
       process.env.ACCESS_TOKEN_SECRET,
     );
 
+    const author = await prisma.author.findUnique({where: {id:decodedtoken?.id}});
+
+    if(!author){
+      throw
+    }
+
+    req.author = author;
+
     next();
   } catch (error) {
     throw new ApiError(
@@ -26,3 +35,5 @@ const Authenticate = async (req, _, next) => {
     );
   }
 };
+
+export default Authenticate;
