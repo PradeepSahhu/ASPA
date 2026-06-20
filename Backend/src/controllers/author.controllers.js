@@ -1,7 +1,7 @@
-import { ApiResponse } from "../utility/api.response";
-import { API_CODE } from "../utility/constants/api.constants";
+import { ApiResponse } from "../utility/api.response.js";
+import { API_CODE } from "../utility/constants/api.constants.js";
 
-const LoginAuthor = async (req, res) => {
+const AuthorLogin = async (req, res) => {
   const { email, password } = req.body;
 
   console.log(email, password);
@@ -11,3 +11,5 @@ const LoginAuthor = async (req, res) => {
 
   return new ApiResponse(API_CODE.ACCEPTED, { user: "Pradeep" }, "success");
 };
+
+export { AuthorLogin };
