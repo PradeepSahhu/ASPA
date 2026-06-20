@@ -1,6 +1,7 @@
 import { ApiError } from "../utility/api.error.js";
 import { ApiResponse } from "../utility/api.response.js";
 import { API_CODE } from "../utility/constants/api.constants.js";
+import { ROLE } from "../utility/constants/role.constants.js";
 import prisma from "../utility/database/index.js";
 import { generateAccessToken } from "../utility/tokens/access.token.js";
 
@@ -31,7 +32,11 @@ const AuthorLogin = async (req, res) => {
     secure: true,
   };
 
-  const accessToken = await generateAccessToken(author.id, author.email);
+  const accessToken = await generateAccessToken(
+    author.id,
+    author.email,
+    ROLE.AUTHOR,
+  );
 
   return res
     .status(API_CODE.ACCEPTED)

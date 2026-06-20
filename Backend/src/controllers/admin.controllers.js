@@ -1,6 +1,7 @@
 import { ApiError } from "../utility/api.error.js";
 import { ApiResponse } from "../utility/api.response.js";
 import { API_CODE } from "../utility/constants/api.constants.js";
+import { ROLE } from "../utility/constants/role.constants.js";
 import prisma from "../utility/database/index.js";
 import { generateAccessToken } from "../utility/tokens/access.token.js";
 
@@ -30,7 +31,11 @@ const AdminLogin = async (req, res) => {
     secure: true,
   };
 
-  const accessToken = await generateAccessToken(admin.id, admin.email);
+  const accessToken = await generateAccessToken(
+    admin.id,
+    admin.email,
+    ROLE.ADMIN,
+  );
 
   return res
     .status(API_CODE.ACCEPTED)
