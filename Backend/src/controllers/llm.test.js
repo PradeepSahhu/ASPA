@@ -6,6 +6,8 @@ import { API_CODE } from "../utility/constants/api.constants.js";
 export const llmTest = async (req, res) => {
   const { prompt } = req.body;
 
+  const authorId = req.author?.id;
+
   if (!prompt) {
     return res
       .status(API_CODE.BAD_REQUEST)
@@ -17,7 +19,7 @@ export const llmTest = async (req, res) => {
         ),
       );
   }
-  const llmRes = await LlmInvoke(prompt);
+  const llmRes = await LlmInvoke(prompt, authorId);
 
   return res
     .status(API_CODE.ACCEPTED)
