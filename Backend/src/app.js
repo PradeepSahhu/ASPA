@@ -5,6 +5,7 @@ import bookRoutes from "./Routes/book.routes.js";
 import AdminRoutes from "./Routes/admin.routes.js";
 import TicketRoutes from "./Routes/ticket.routes.js";
 import conversationRoutes from "./Routes/ticket-conversation.routes.js";
+import llmRoutes from "./Routes/llm.routes.js";
 import cors from "cors";
 
 const app = express();
@@ -33,5 +34,6 @@ app.use("/book", bookRoutes);
 app.use("/admin", AdminRoutes);
 app.use("/ticket", TicketRoutes);
 app.use("/conversation", conversationRoutes);
+app.use("/llm", llmRoutes);
 
 export default app;
