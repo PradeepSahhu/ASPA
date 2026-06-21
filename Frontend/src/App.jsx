@@ -6,7 +6,6 @@ import {
   Routes,
   useNavigate,
 } from "react-router-dom";
-import { ChatPage } from "./pages/ticket-conversation.jsx";
 import { AuthorDashboardPage } from "./pages/author-dashboard.jsx";
 import { AdminDashboardPage } from "./pages/admin-dashboard.jsx";
 import { TicketDetailPage } from "./pages/ticket-detail.jsx";
@@ -138,7 +137,6 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/dashboard" element={<AuthorDashboardPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
-        <Route path="/chat" element={<ChatPage />} />
         <Route path="/:ticketId" element={<TicketDetailPage />} />
       </Routes>
     </BrowserRouter>
