@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 const API = "http://localhost:3000";
 
 const statusColor = (status) => {
-  if (status === "OPEN") return "#40c057";
-  if (status === "CLOSED") return "#adb5bd";
-  return "#fab005";
+  if (status === "OPEN") return "bg-emerald-600";
+  if (status === "CLOSED") return "bg-slate-500";
+  return "bg-amber-500";
 };
 
-export function AdminDashboardPage() {
+export function AdminDashboardPage({ isDark, onToggleTheme }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,154 +41,96 @@ export function AdminDashboardPage() {
   );
 
   return (
-    <div
-      style={{
-        fontFamily: "sans-serif",
-        minHeight: "100vh",
-        background: "#f8f9fa",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          background: "#fff",
-          padding: "14px 28px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid #dee2e6",
-        }}
-      >
-        <h2 style={{ margin: 0 }}>Admin Dashboard</h2>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <span style={{ color: "#495057" }}>
-            {user.name || user.email || "Admin"}
-          </span>
-          <button
-            onClick={() => {
-              localStorage.clear();
-              navigate("/");
-            }}
-            style={{
-              padding: "6px 14px",
-              background: "#ff6b6b",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Logout
-          </button>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#12314f_0%,#06080d_58%)] text-slate-100">
+      <header className="border-b border-slate-700/70 bg-slate-900/80 px-4 py-3 backdrop-blur sm:px-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Admin Dashboard</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onToggleTheme}
+              className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+            >
+              {isDark ? "Light Theme" : "Black Theme"}
+            </button>
+            <span className="hidden text-sm text-slate-400 sm:inline">
+              {user.name || user.email || "Admin"}
+            </span>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                navigate("/");
+              }}
+              className="rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-rose-500"
+            >
+              Logout
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Body */}
-      <div style={{ padding: "24px" }}>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "8px",
-            padding: "20px",
-            border: "1px solid #dee2e6",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-              gap: "12px",
-            }}
-          >
-            <h3 style={{ margin: 0 }}>All Tickets</h3>
+      <main className="p-4 sm:p-6">
+        <section className="rounded-xl border border-slate-700/70 bg-slate-900/80 p-5 shadow-xl">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold">All Tickets</h3>
             <input
               type="text"
               placeholder="Search by subject or author..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{
-                padding: "8px 12px",
-                border: "1px solid #ced4da",
-                borderRadius: "4px",
-                width: "280px",
-              }}
+              className="w-full max-w-sm rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
             />
           </div>
 
           {loading ? (
-            <p style={{ color: "#adb5bd" }}>Loading tickets...</p>
+            <p className="text-slate-400">Loading tickets...</p>
           ) : filtered.length === 0 ? (
-            <p style={{ color: "#adb5bd" }}>No tickets found.</p>
+            <p className="text-slate-400">No tickets found.</p>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#f1f3f5", textAlign: "left" }}>
-                  <th style={th}>Subject</th>
-                  <th style={th}>Author</th>
-                  <th style={th}>Email</th>
-                  <th style={th}>Category</th>
-                  <th style={th}>Status</th>
-                  <th style={th}>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    onClick={() => navigate(`/${ticket.id}`)}
-                    style={{
-                      borderBottom: "1px solid #dee2e6",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f8f9fa")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "")
-                    }
-                  >
-                    <td style={td}>{ticket.header}</td>
-                    <td style={td}>{ticket.author?.name || "—"}</td>
-                    <td style={td}>{ticket.author?.email || "—"}</td>
-                    <td style={td}>{ticket.category || "—"}</td>
-                    <td style={td}>
-                      <span
-                        style={{
-                          padding: "2px 10px",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          background: statusColor(ticket.status),
-                          color: "#fff",
-                        }}
-                      >
-                        {ticket.status}
-                      </span>
-                    </td>
-                    <td style={{ ...td, color: "#868e96", fontSize: "13px" }}>
-                      {new Date(ticket.createdDate).toLocaleDateString()}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700 bg-slate-800/80 text-xs uppercase tracking-wider text-slate-300">
+                    <th className="px-3 py-2">Subject</th>
+                    <th className="px-3 py-2">Author</th>
+                    <th className="px-3 py-2">Email</th>
+                    <th className="px-3 py-2">Category</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      onClick={() => navigate(`/${ticket.id}`)}
+                      className="cursor-pointer border-b border-slate-800 transition hover:bg-slate-800/70"
+                    >
+                      <td className="px-3 py-3">{ticket.header}</td>
+                      <td className="px-3 py-3">
+                        {ticket.author?.name || "—"}
+                      </td>
+                      <td className="px-3 py-3">
+                        {ticket.author?.email || "—"}
+                      </td>
+                      <td className="px-3 py-3">{ticket.category || "—"}</td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] text-white ${statusColor(ticket.status)}`}
+                        >
+                          {ticket.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-slate-400">
+                        {new Date(ticket.createdDate).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
-
-const th = {
-  padding: "10px 14px",
-  fontWeight: "600",
-  fontSize: "13px",
-  color: "#495057",
-};
-
-const td = {
-  padding: "12px 14px",
-  fontSize: "14px",
-  verticalAlign: "middle",
-};

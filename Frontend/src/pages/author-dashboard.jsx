@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const API = "http://localhost:3000";
 
-export function AuthorDashboardPage() {
+export function AuthorDashboardPage({ isDark, onToggleTheme }) {
   const [books, setBooks] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
@@ -88,154 +88,78 @@ export function AuthorDashboardPage() {
   };
 
   const statusColor = (status) => {
-    if (status === "OPEN") return "#40c057";
-    if (status === "CLOSED") return "#adb5bd";
-    return "#fab005";
+    if (status === "OPEN") return "bg-emerald-600";
+    if (status === "CLOSED") return "bg-slate-500";
+    return "bg-amber-500";
   };
 
   return (
-    <div
-      style={{
-        fontFamily: "sans-serif",
-        minHeight: "100vh",
-        background: "#f8f9fa",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          background: "#fff",
-          padding: "14px 28px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid #dee2e6",
-        }}
-      >
-        <h2 style={{ margin: 0 }}>Author Dashboard</h2>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <span style={{ color: "#495057" }}>
-            {user.name || user.email || "Author"}
-          </span>
-          <button
-            onClick={() => navigate("/chat")}
-            style={{
-              padding: "6px 14px",
-              background: "#4dabf7",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Chat
-          </button>
-          <button
-            onClick={() => {
-              localStorage.clear();
-              navigate("/");
-            }}
-            style={{
-              padding: "6px 14px",
-              background: "#ff6b6b",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Logout
-          </button>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#12314f_0%,#06080d_58%)] text-slate-100 dark:bg-[radial-gradient(circle_at_top_left,#12314f_0%,#06080d_58%)]">
+      <header className="border-b border-slate-700/70 bg-slate-900/80 px-4 py-3 backdrop-blur sm:px-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Author Dashboard</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onToggleTheme}
+              className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+            >
+              {isDark ? "Light Theme" : "Black Theme"}
+            </button>
+            <span className="hidden text-sm text-slate-400 sm:inline">
+              {user.name || user.email || "Author"}
+            </span>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                navigate("/");
+              }}
+              className="rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-rose-500"
+            >
+              Logout
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Body */}
-      <div style={{ display: "flex", gap: "24px", padding: "24px" }}>
-        {/* Left: Books */}
-        <div
-          style={{
-            flex: 1,
-            background: "#fff",
-            borderRadius: "8px",
-            padding: "20px",
-            border: "1px solid #dee2e6",
-          }}
-        >
-          <h3 style={{ margin: "0 0 16px" }}>My Books</h3>
+      <main className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[1fr_380px]">
+        <section className="rounded-xl border border-slate-700/70 bg-slate-900/80 p-5 shadow-xl">
+          <h3 className="mb-4 text-lg font-semibold">My Books</h3>
           {loadingBooks ? (
-            <p style={{ color: "#adb5bd" }}>Loading books...</p>
+            <p className="text-slate-400">Loading books...</p>
           ) : books.length === 0 ? (
-            <p style={{ color: "#adb5bd" }}>No books found.</p>
+            <p className="text-slate-400">No books found.</p>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            <ul className="space-y-2">
               {books.map((book) => (
                 <li
                   key={book.id}
-                  style={{
-                    padding: "12px",
-                    marginBottom: "8px",
-                    background: "#f1f3f5",
-                    borderRadius: "6px",
-                  }}
+                  className="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2"
                 >
                   <strong>{book.title}</strong>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </section>
 
-        {/* Right: Tickets */}
-        <div
-          style={{
-            width: "380px",
-            flexShrink: 0,
-            background: "#fff",
-            borderRadius: "8px",
-            padding: "20px",
-            border: "1px solid #dee2e6",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-            }}
-          >
-            <h3 style={{ margin: 0 }}>My Tickets</h3>
+        <aside className="rounded-xl border border-slate-700/70 bg-slate-900/80 p-5 shadow-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold">My Tickets</h3>
             <button
               onClick={() => {
                 setShowTicketForm(!showTicketForm);
                 setTicketError("");
               }}
-              style={{
-                padding: "6px 14px",
-                background: "#40c057",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
+              className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-500"
             >
               {showTicketForm ? "Cancel" : "+ Raise Ticket"}
             </button>
           </div>
 
-          {/* New Ticket Form */}
           {showTicketForm && (
             <form
               onSubmit={handleRaiseTicket}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-                marginBottom: "16px",
-                padding: "12px",
-                background: "#f1f3f5",
-                borderRadius: "6px",
-              }}
+              className="mb-4 space-y-2 rounded-lg border border-slate-700 bg-slate-800/70 p-3"
             >
               <input
                 name="header"
@@ -243,11 +167,7 @@ export function AuthorDashboardPage() {
                 value={ticketForm.header}
                 onChange={handleTicketInput}
                 required
-                style={{
-                  padding: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid #ced4da",
-                }}
+                className="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500"
               />
               <textarea
                 name="description"
@@ -256,22 +176,13 @@ export function AuthorDashboardPage() {
                 onChange={handleTicketInput}
                 required
                 rows={3}
-                style={{
-                  padding: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid #ced4da",
-                  resize: "vertical",
-                }}
+                className="w-full resize-y rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500"
               />
               <select
                 name="bookId"
                 value={ticketForm.bookId}
                 onChange={handleTicketInput}
-                style={{
-                  padding: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid #ced4da",
-                }}
+                className="w-full rounded-md border border-slate-600 bg-slate-900 px-2.5 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500"
               >
                 <option value="">No book (optional)</option>
                 {books.map((book) => (
@@ -281,82 +192,42 @@ export function AuthorDashboardPage() {
                 ))}
               </select>
               {ticketError && (
-                <p style={{ color: "red", margin: 0, fontSize: "13px" }}>
-                  {ticketError}
-                </p>
+                <p className="text-sm text-red-400">{ticketError}</p>
               )}
               <button
                 type="submit"
                 disabled={ticketSubmitting}
-                style={{
-                  padding: "8px",
-                  background: "#4dabf7",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
+                className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {ticketSubmitting ? "Submitting..." : "Submit Ticket"}
               </button>
             </form>
           )}
 
-          {/* Tickets List */}
           {loadingTickets ? (
-            <p style={{ color: "#adb5bd" }}>Loading tickets...</p>
+            <p className="text-slate-400">Loading tickets...</p>
           ) : tickets.length === 0 ? (
-            <p style={{ color: "#adb5bd" }}>No tickets raised yet.</p>
+            <p className="text-slate-400">No tickets raised yet.</p>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            <ul className="space-y-2">
               {tickets.map((ticket) => (
                 <li
                   key={ticket.id}
                   onClick={() => navigate(`/${ticket.id}`)}
-                  style={{
-                    padding: "12px",
-                    marginBottom: "8px",
-                    background: "#f1f3f5",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#e9ecef")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "#f1f3f5")
-                  }
+                  className="cursor-pointer rounded-lg border border-slate-700 bg-slate-800/70 p-3 transition hover:border-blue-500 hover:bg-slate-800"
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <strong style={{ fontSize: "14px" }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="line-clamp-1 text-sm">
                       {ticket.header}
                     </strong>
                     <span
-                      style={{
-                        fontSize: "11px",
-                        padding: "2px 8px",
-                        borderRadius: "12px",
-                        background: statusColor(ticket.status),
-                        color: "#fff",
-                      }}
+                      className={`rounded-full px-2 py-0.5 text-[11px] text-white ${statusColor(ticket.status)}`}
                     >
                       {ticket.status}
                     </span>
                   </div>
                   {ticket.category && (
-                    <p
-                      style={{
-                        margin: "4px 0 0",
-                        fontSize: "12px",
-                        color: "#868e96",
-                      }}
-                    >
+                    <p className="mt-1 text-xs text-slate-400">
                       {ticket.category}
                     </p>
                   )}
@@ -364,8 +235,8 @@ export function AuthorDashboardPage() {
               ))}
             </ul>
           )}
-        </div>
-      </div>
+        </aside>
+      </main>
     </div>
   );
 }

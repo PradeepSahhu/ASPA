@@ -1,17 +1,10 @@
 import { useState } from "react";
-import {
-  BrowserRouter,
-  Link,
-  Route,
-  Routes,
-  useNavigate,
-} from "react-router-dom";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { AuthorDashboardPage } from "./pages/author-dashboard.jsx";
 import { AdminDashboardPage } from "./pages/admin-dashboard.jsx";
 import { TicketDetailPage } from "./pages/ticket-detail.jsx";
-import "./App.css";
 
-function HomePage() {
+function HomePage({ isDark, onToggleTheme }) {
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -53,7 +46,6 @@ function HomePage() {
         return;
       }
 
-      // Save auth info and navigate
       localStorage.setItem("user", JSON.stringify(data.data));
       localStorage.setItem("role", isAdmin ? "admin" : "author");
       navigate(isAdmin ? "/admin-dashboard" : "/dashboard");
@@ -65,43 +57,35 @@ function HomePage() {
   };
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh" }}>
-      {/* Admin Toggle Button - Top Right */}
-      <div style={{ position: "absolute", top: "20px", right: "20px" }}>
+    <div className="relative min-h-screen bg-[radial-gradient(circle_at_12%_12%,#12314f_0%,#06080d_52%)] px-4 py-8 text-slate-100 dark:bg-[radial-gradient(circle_at_12%_12%,#12314f_0%,#06080d_52%)] dark:text-slate-100 sm:px-6">
+      <div className="absolute right-4 top-4 flex gap-2 sm:right-6 sm:top-6">
+        <button
+          onClick={onToggleTheme}
+          className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+        >
+          {isDark ? "Light Theme" : "Black Theme"}
+        </button>
         <button
           onClick={() => {
             setIsAdmin(!isAdmin);
             setCredentials({ email: "", password: "" });
             setError("");
           }}
-          style={{
-            padding: "8px 16px",
-            fontSize: "14px",
-            backgroundColor: isAdmin ? "#ff6b6b" : "#4dabf7",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
+          className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500"
         >
           {isAdmin ? "Switch to Author" : "Admin Login"}
         </button>
       </div>
 
-      <section id="center">
-        <div>
-          <h1>{isAdmin ? "Admin Login" : "Author Login"}</h1>
-          <p>Welcome to your chat frontend. Please login to continue.</p>
-        </div>
-        <form
-          onSubmit={handleLogin}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-            maxWidth: "300px",
-          }}
-        >
+      <section className="mx-auto mt-16 flex w-full max-w-md flex-col rounded-2xl border border-slate-700/70 bg-slate-900/85 p-6 text-left shadow-2xl backdrop-blur sm:mt-20 sm:p-7 dark:border-slate-700/70 dark:bg-slate-900/85 dark:text-slate-100">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          {isAdmin ? "Admin Login" : "Author Login"}
+        </h1>
+        <p className="mt-2 text-sm text-slate-400">
+          Welcome to your chat frontend. Please login to continue.
+        </p>
+
+        <form onSubmit={handleLogin} className="mt-5 flex flex-col gap-3">
           <input
             type="email"
             name="email"
@@ -109,6 +93,7 @@ function HomePage() {
             value={credentials.email}
             onChange={handleInputChange}
             required
+            className="rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-blue-500"
           />
           <input
             type="password"
@@ -117,9 +102,14 @@ function HomePage() {
             value={credentials.password}
             onChange={handleInputChange}
             required
+            className="rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-blue-500"
           />
-          {error && <p style={{ color: "red" }}>{error}</p>}
-          <button type="submit" className="counter" disabled={loading}>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 rounded-xl bg-linear-to-r from-blue-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:from-blue-500 hover:to-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
+          >
             {loading
               ? "Logging in..."
               : `${isAdmin ? "Admin" : "Author"} Login`}
@@ -131,15 +121,61 @@ function HomePage() {
 }
 
 function App() {
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem("theme");
+    return saved ? saved === "dark" : true;
+  });
+
+  const handleToggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      localStorage.setItem("theme", next ? "dark" : "light");
+      return next;
+    });
+  };
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/dashboard" element={<AuthorDashboardPage />} />
-        <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
-        <Route path="/:ticketId" element={<TicketDetailPage />} />
-      </Routes>
-    </BrowserRouter>
+    <div className={isDark ? "dark" : ""}>
+      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <HomePage isDark={isDark} onToggleTheme={handleToggleTheme} />
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <AuthorDashboardPage
+                  isDark={isDark}
+                  onToggleTheme={handleToggleTheme}
+                />
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <AdminDashboardPage
+                  isDark={isDark}
+                  onToggleTheme={handleToggleTheme}
+                />
+              }
+            />
+            <Route
+              path="/:ticketId"
+              element={
+                <TicketDetailPage
+                  isDark={isDark}
+                  onToggleTheme={handleToggleTheme}
+                />
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </div>
   );
 }
 
