@@ -40,6 +40,8 @@ const AuthorLogin = async (req, res) => {
 
   return res
     .status(API_CODE.ACCEPTED)
+    .header("Authorization", `Bearer ${accessToken}`)
+    .header("x-access-token", accessToken)
     .cookie("accessToken", accessToken, options)
     .json(
       new ApiResponse(

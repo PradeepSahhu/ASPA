@@ -85,4 +85,58 @@ const updateCategory = async (req, res) => {
     .json(new ApiResponse(API_CODE.ACCEPTED, updatedTicket, "success"));
 };
 
-export { CreateNewTicket, updateCategory };
+const GetAuthorTickets = async (req, res) => {
+  const author = req.author;
+
+  if (!author) {
+    return res
+      .status(API_CODE.UNAUTHORIZED)
+      .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+  }
+
+  const tickets = await prisma.ticket.findMany({
+    where: { authorId: author.id },
+    orderBy: { createdDate: "desc" },
+    select: {
+      id: true,
+      header: true,
+      status: true,
+      category: true,
+      createdDate: true,
+    },
+  });
+
+  return res
+    .status(API_CODE.ACCEPTED)
+    .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
+};
+
+const GetAllTickets = async (req, res) => {
+  const admin = req.admin;
+
+  if (!admin) {
+    return res
+      .status(API_CODE.UNAUTHORIZED)
+      .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+  }
+
+  const tickets = await prisma.ticket.findMany({
+    orderBy: { createdDate: "desc" },
+    select: {
+      id: true,
+      header: true,
+      status: true,
+      category: true,
+      createdDate: true,
+      author: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+  });
+
+  return res
+    .status(API_CODE.ACCEPTED)
+    .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
+};
+
+export { CreateNewTicket, updateCategory, GetAuthorTickets, GetAllTickets };

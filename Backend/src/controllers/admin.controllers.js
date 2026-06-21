@@ -39,6 +39,8 @@ const AdminLogin = async (req, res) => {
 
   return res
     .status(API_CODE.ACCEPTED)
+    .header("Authorization", `Bearer ${accessToken}`)
+    .header("x-access-token", accessToken)
     .cookie("accessToken", accessToken, options)
     .json(
       new ApiResponse(
@@ -58,7 +60,7 @@ const AdminSignUp = async (req, res) => {
       .json(
         new ApiResponse(
           API_CODE.BAD_REQUEST,
-          "email and password are required",
+          "email, password, and username are required",
           "Failed",
         ),
       );
