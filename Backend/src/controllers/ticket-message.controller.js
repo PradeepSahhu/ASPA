@@ -1,3 +1,4 @@
+import { getIO } from "../sockets/socketManager.js";
 import { ApiError } from "../utility/api.error.js";
 import { ApiResponse } from "../utility/api.response.js";
 import { API_CODE } from "../utility/constants/api.constants.js";
@@ -40,6 +41,9 @@ const createNewMessage = async (req, res) => {
       responseActor,
     },
   });
+
+  const io = getIO();
+  io.to(ticketId).emit("message:new", newMessage);
 
   return res
     .status(API_CODE.ACCEPTED)
