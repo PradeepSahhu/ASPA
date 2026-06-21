@@ -1,8 +1,10 @@
-## ASPA
+## ASPA (Author Support Automation)
 
 This is a monorepo for the ASPA Project, it contains both the Frontend and the Backend of the project. The project is built using React for the frontend and Node.js's Express for the backend.
 
-## Database Setup
+## Database
+
+<img src="./Docs/Images/ER-diagram.png" alt="Database Schema" width="600"/>
 
 ### Prerequisites
 
@@ -138,3 +140,16 @@ After any schema changes, regenerate the Prisma Client:
 ```bash
 npx prisma generate
 ```
+
+## LLM Integration
+
+I will be using the langchain library to integrate with the DeepSeek LLM API (OpenAI Spec). the langchain provides two types of agents.
+
+1. langchain agents : for fine grained control over the agent's behavior and the no tools by default.
+
+2. deep agents : for a more out of the box experience with a set of pre defined tools and a more general agent behavior.(planning etc)
+
+[Link](https://docs.langchain.com/oss/javascript/langchain/quickstart#)
+I will be using the deep agents for this project.
+
+Redis and Vector DB using : https://console.upstash.com/redis/6353a65a-45de-4579-aa14-c876a41759fe
