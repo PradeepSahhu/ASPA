@@ -10,6 +10,16 @@ const statusColor = (status) => {
 };
 
 export function AdminDashboardPage({ isDark, onToggleTheme }) {
+  const shellClass = isDark
+    ? "bg-[radial-gradient(circle_at_top_left,#12314f_0%,#06080d_58%)] text-slate-100"
+    : "bg-[radial-gradient(circle_at_top_left,#dbeafe_0%,#f8fafc_58%)] text-slate-900";
+  const panelClass = isDark
+    ? "border-slate-700/70 bg-slate-900/80"
+    : "border-slate-200 bg-white/90";
+  const inputClass = isDark
+    ? "border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-400"
+    : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-500";
+
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,18 +51,22 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#12314f_0%,#06080d_58%)] text-slate-100">
-      <header className="border-b border-slate-700/70 bg-slate-900/80 px-4 py-3 backdrop-blur sm:px-7">
+    <div className={`min-h-screen ${shellClass}`}>
+      <header
+        className={`border-b px-4 py-3 backdrop-blur sm:px-7 ${panelClass}`}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Admin Dashboard</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={onToggleTheme}
-              className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold text-white transition ${isDark ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}
             >
               {isDark ? "Light Theme" : "Black Theme"}
             </button>
-            <span className="hidden text-sm text-slate-400 sm:inline">
+            <span
+              className={`hidden text-sm sm:inline ${isDark ? "text-slate-400" : "text-slate-600"}`}
+            >
               {user.name || user.email || "Admin"}
             </span>
             <button
@@ -69,7 +83,7 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
       </header>
 
       <main className="p-4 sm:p-6">
-        <section className="rounded-xl border border-slate-700/70 bg-slate-900/80 p-5 shadow-xl">
+        <section className={`rounded-xl border p-5 shadow-xl ${panelClass}`}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-lg font-semibold">All Tickets</h3>
             <input
@@ -77,19 +91,25 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
               placeholder="Search by subject or author..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-sm rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+              className={`w-full max-w-sm rounded-md border px-3 py-2 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
             />
           </div>
 
           {loading ? (
-            <p className="text-slate-400">Loading tickets...</p>
+            <p className={isDark ? "text-slate-400" : "text-slate-600"}>
+              Loading tickets...
+            </p>
           ) : filtered.length === 0 ? (
-            <p className="text-slate-400">No tickets found.</p>
+            <p className={isDark ? "text-slate-400" : "text-slate-600"}>
+              No tickets found.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-700 bg-slate-800/80 text-xs uppercase tracking-wider text-slate-300">
+                  <tr
+                    className={`border-b text-xs uppercase tracking-wider ${isDark ? "border-slate-700 bg-slate-800/80 text-slate-300" : "border-slate-200 bg-slate-100 text-slate-600"}`}
+                  >
                     <th className="px-3 py-2">Subject</th>
                     <th className="px-3 py-2">Author</th>
                     <th className="px-3 py-2">Email</th>
@@ -103,7 +123,7 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
                     <tr
                       key={ticket.id}
                       onClick={() => navigate(`/${ticket.id}`)}
-                      className="cursor-pointer border-b border-slate-800 transition hover:bg-slate-800/70"
+                      className={`cursor-pointer border-b transition ${isDark ? "border-slate-800 hover:bg-slate-800/70" : "border-slate-200 hover:bg-slate-100"}`}
                     >
                       <td className="px-3 py-3">{ticket.header}</td>
                       <td className="px-3 py-3">
@@ -120,7 +140,9 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
                           {ticket.status}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-slate-400">
+                      <td
+                        className={`px-3 py-3 ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                      >
                         {new Date(ticket.createdDate).toLocaleDateString()}
                       </td>
                     </tr>

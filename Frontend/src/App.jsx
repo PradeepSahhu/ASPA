@@ -5,6 +5,18 @@ import { AdminDashboardPage } from "./pages/admin-dashboard.jsx";
 import { TicketDetailPage } from "./pages/ticket-detail.jsx";
 
 function HomePage({ isDark, onToggleTheme }) {
+  const pageClass = isDark
+    ? "bg-[radial-gradient(circle_at_12%_12%,#12314f_0%,#06080d_52%)] text-slate-100"
+    : "bg-[radial-gradient(circle_at_12%_12%,#dbeafe_0%,#f8fafc_52%)] text-slate-900";
+
+  const cardClass = isDark
+    ? "border-slate-700/70 bg-slate-900/85 text-slate-100"
+    : "border-slate-200 bg-white/90 text-slate-900";
+
+  const inputClass = isDark
+    ? "border-slate-700 bg-slate-950/70 text-slate-100 placeholder:text-slate-500"
+    : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-400";
+
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -57,11 +69,11 @@ function HomePage({ isDark, onToggleTheme }) {
   };
 
   return (
-    <div className="relative min-h-screen bg-[radial-gradient(circle_at_12%_12%,#12314f_0%,#06080d_52%)] px-4 py-8 text-slate-100 dark:bg-[radial-gradient(circle_at_12%_12%,#12314f_0%,#06080d_52%)] dark:text-slate-100 sm:px-6">
+    <div className={`relative min-h-screen px-4 py-8 sm:px-6 ${pageClass}`}>
       <div className="absolute right-4 top-4 flex gap-2 sm:right-6 sm:top-6">
         <button
           onClick={onToggleTheme}
-          className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+          className={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition ${isDark ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}
         >
           {isDark ? "Light Theme" : "Black Theme"}
         </button>
@@ -77,11 +89,15 @@ function HomePage({ isDark, onToggleTheme }) {
         </button>
       </div>
 
-      <section className="mx-auto mt-16 flex w-full max-w-md flex-col rounded-2xl border border-slate-700/70 bg-slate-900/85 p-6 text-left shadow-2xl backdrop-blur sm:mt-20 sm:p-7 dark:border-slate-700/70 dark:bg-slate-900/85 dark:text-slate-100">
+      <section
+        className={`mx-auto mt-16 flex w-full max-w-md flex-col rounded-2xl border p-6 text-left shadow-2xl backdrop-blur sm:mt-20 sm:p-7 ${cardClass}`}
+      >
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           {isAdmin ? "Admin Login" : "Author Login"}
         </h1>
-        <p className="mt-2 text-sm text-slate-400">
+        <p
+          className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+        >
           Welcome to your chat frontend. Please login to continue.
         </p>
 
@@ -93,7 +109,7 @@ function HomePage({ isDark, onToggleTheme }) {
             value={credentials.email}
             onChange={handleInputChange}
             required
-            className="rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-blue-500"
+            className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
           />
           <input
             type="password"
@@ -102,7 +118,7 @@ function HomePage({ isDark, onToggleTheme }) {
             value={credentials.password}
             onChange={handleInputChange}
             required
-            className="rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-blue-500"
+            className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
           />
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button
@@ -135,46 +151,44 @@ function App() {
   };
 
   return (
-    <div className={isDark ? "dark" : ""}>
-      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-        <BrowserRouter>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <HomePage isDark={isDark} onToggleTheme={handleToggleTheme} />
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <AuthorDashboardPage
-                  isDark={isDark}
-                  onToggleTheme={handleToggleTheme}
-                />
-              }
-            />
-            <Route
-              path="/admin-dashboard"
-              element={
-                <AdminDashboardPage
-                  isDark={isDark}
-                  onToggleTheme={handleToggleTheme}
-                />
-              }
-            />
-            <Route
-              path="/:ticketId"
-              element={
-                <TicketDetailPage
-                  isDark={isDark}
-                  onToggleTheme={handleToggleTheme}
-                />
-              }
-            />
-          </Routes>
-        </BrowserRouter>
-      </div>
+    <div className="min-h-screen">
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <HomePage isDark={isDark} onToggleTheme={handleToggleTheme} />
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthorDashboardPage
+                isDark={isDark}
+                onToggleTheme={handleToggleTheme}
+              />
+            }
+          />
+          <Route
+            path="/admin-dashboard"
+            element={
+              <AdminDashboardPage
+                isDark={isDark}
+                onToggleTheme={handleToggleTheme}
+              />
+            }
+          />
+          <Route
+            path="/:ticketId"
+            element={
+              <TicketDetailPage
+                isDark={isDark}
+                onToggleTheme={handleToggleTheme}
+              />
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
