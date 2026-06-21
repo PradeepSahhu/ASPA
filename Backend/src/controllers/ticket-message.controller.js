@@ -5,7 +5,8 @@ import { ROLE } from "../utility/constants/role.constants.js";
 import prisma from "../utility/database/index.js";
 
 const createNewMessage = async (req, res) => {
-  const { ticketId, message } = req.body;
+  const { conversationId: ticketId } = req.params;
+  const { message } = req.body;
 
   if (!ticketId || !message) {
     return res
@@ -45,4 +46,30 @@ const createNewMessage = async (req, res) => {
     .json(new ApiResponse(API_CODE.ACCEPTED, newMessage, "success"));
 };
 
-export { createNewMessage };
+const GetConversationMessages = async (req, res) => {
+  const { conversationId: ticketId } = req.params;
+
+  if (!ticketId) {
+    return res
+      .status(API_CODE.BAD_REQUEST)
+      .json(new ApiError(API_CODE.BAD_REQUEST, "ticketId are required"));
+  }
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+  if (!ticket) {
+    return res
+      .status(API_CODE.NOT_FOUND)
+      .json(new ApiError(API_CODE.NOT_FOUND, "Ticket not found"));
+  }
+
+  const ticketMessages = await prisma.ticketMessage.findMany({
+    where: { ticketId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return res
+    .status(API_CODE.ACCEPTED)
+    .json(new ApiResponse(API_CODE.ACCEPTED, ticketMessages, "success"));
+};
+
+export { createNewMessage, GetConversationMessages };

@@ -4,6 +4,7 @@ import authorRoutes from "./Routes/author.routes.js";
 import bookRoutes from "./Routes/book.routes.js";
 import AdminRoutes from "./Routes/admin.routes.js";
 import TicketRoutes from "./Routes/ticket.routes.js";
+import conversationRoutes from "./Routes/ticket-conversation.routes.js";
 
 const app = express();
 
@@ -14,5 +15,6 @@ app.use("/author", authorRoutes);
 app.use("/book", bookRoutes);
 app.use("/admin", AdminRoutes);
 app.use("/ticket", TicketRoutes);
+app.use("/conversation", conversationRoutes);
 
 export default app;
