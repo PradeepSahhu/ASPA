@@ -20,9 +20,13 @@ export const callLLM = async ({ systemPrompt, userPrompt, userId }) => {
 };
 
 export const LlmInvoke = async (userPrompt, userId) => {
-  return await callLLM({
-    systemPrompt: DB_SYSTEM_PROMPT,
-    userPrompt: `The user Query is ${userPrompt} and the current author id ${userId}`,
-    userId,
-  });
+  const messages = [
+    { role: "system", content: DB_SYSTEM_PROMPT },
+    {
+      role: "human",
+      content: `The user Query is ${userPrompt} and the current author id ${userId}`,
+    },
+  ];
+
+  return await executeToolLoop(modelWithTool, messages, userId);
 };

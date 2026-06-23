@@ -26,6 +26,19 @@ const priorityLabel = (score) => {
   return "Unset";
 };
 
+const countWords = (text) => {
+  if (!text) return 0;
+  return text.trim().split(/\s+/).length;
+};
+
+const getDescriptionPreview = (text, isExpanded) => {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= 200) return text;
+  if (isExpanded) return text;
+  return words.slice(0, 200).join(" ") + "...";
+};
+
 const PRIORITIES = [
   { value: 1, label: "Low" },
   { value: 2, label: "Medium" },
@@ -76,6 +89,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const [llmChat, setLlmChat] = useState([]);
   const [llmInput, setLlmInput] = useState("");
   const [activePanel, setActivePanel] = useState("info"); // info, llm
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
@@ -305,16 +319,52 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
         });
       }
 
+      // Check if message mentions ASPA_LLM
+      const hasLLMMention = text.includes("@ASPA_LLM");
+      const messageToSend = text.trim();
+
+      // First, send the user message to save it
       const res = await fetch(`${API}/conversation/${ticketId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: text.trim() }),
+        body: JSON.stringify({ message: messageToSend }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.message || "Failed to send message");
         return;
+      }
+
+      // If message mentions ASPA_LLM, send to LLM endpoint
+      if (hasLLMMention) {
+        // Extract message without the mention
+        const llmPrompt = messageToSend.replace(/@ASPA_LLM\s*/g, "").trim();
+
+        try {
+          const llmRes = await fetch(`${API}/llm`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ prompt: llmPrompt }),
+          });
+
+          if (llmRes.ok) {
+            const llmData = await llmRes.json();
+            // Show LLM response in the LLM chat panel (not in ticket messages)
+            const responseMessage =
+              llmData.data || llmData.response || "No response from LLM";
+            setLlmChat((prev) => [
+              ...prev,
+              { role: "user", content: llmPrompt },
+              { role: "assistant", content: responseMessage },
+            ]);
+            setActivePanel("llm"); // Switch to LLM panel to show response
+          }
+        } catch (llmError) {
+          console.error("Error calling LLM:", llmError);
+          // Don't fail the message send if LLM fails
+        }
       }
 
       setText("");
@@ -485,61 +535,106 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
           <div
             className={`flex-1 overflow-y-auto ${isAdmin ? "" : "px-4 py-5 sm:px-7"}`}
           >
-            <div className="flex flex-col gap-3">
-              {loading ? (
-                <p className={isDark ? "text-slate-400" : "text-slate-600"}>
-                  Loading conversation...
-                </p>
-              ) : messages.length === 0 ? (
-                <p className={isDark ? "text-slate-400" : "text-slate-600"}>
-                  No messages yet. Start the conversation!
-                </p>
-              ) : (
-                messages.map((msg) => {
-                  const isOwnMessage = msg.responseActor === currentActor;
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`max-w-[78%] sm:max-w-[60%] ${msg.responseActor === "ADMIN" ? "self-end" : "self-start"}`}
-                    >
-                      <div
-                        className={`rounded-lg border px-3.5 py-2.5 text-sm ${
-                          isOwnMessage
-                            ? isDark
-                              ? "border-blue-400/70 bg-blue-900/35"
-                              : "border-blue-300 bg-blue-50"
-                            : isDark
-                              ? "border-slate-700 bg-slate-900/80"
-                              : "border-slate-200 bg-white"
-                        }`}
-                      >
-                        <p>{msg.message}</p>
-                      </div>
-                      <div
-                        className={`mt-1 flex gap-2 text-[11px] ${isDark ? "text-slate-400" : "text-slate-600"} ${msg.responseActor === "ADMIN" ? "justify-end" : "justify-start"}`}
-                      >
-                        <span
-                          className={`font-semibold ${actorColor(msg.responseActor)}`}
-                        >
-                          {msg.responseActor}
-                        </span>
-                        <span>
-                          {new Date(msg.createdAt).toLocaleTimeString()}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+            <div className="flex flex-col gap-4">
+              {/* Ticket Header and Description */}
+              {ticket && !loading && (
+                <div className={`rounded-lg border p-4 ${panelClass}`}>
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold break-word">
+                      {ticket.header}
+                    </h2>
 
-              {isOtherTyping && (
-                <div
-                  className={`max-w-[78%] self-end rounded-lg border px-3 py-2 text-xs italic sm:max-w-[60%] ${isDark ? "border-slate-700 bg-slate-900/80 text-slate-400" : "border-slate-200 bg-white text-slate-600"}`}
-                >
-                  {typingLabel} is typing...
+                    {ticket.detailDescription && (
+                      <div className="space-y-2">
+                        <p
+                          className={`text-sm leading-relaxed whitespace-pre-wrap break-word ${
+                            isDark ? "text-slate-300" : "text-slate-700"
+                          }`}
+                        >
+                          {getDescriptionPreview(
+                            ticket.detailDescription,
+                            isDescriptionExpanded,
+                          )}
+                        </p>
+
+                        {countWords(ticket.detailDescription) > 200 && (
+                          <button
+                            onClick={() =>
+                              setIsDescriptionExpanded(!isDescriptionExpanded)
+                            }
+                            className={`text-xs font-semibold transition ${
+                              isDark
+                                ? "text-blue-400 hover:text-blue-300"
+                                : "text-blue-600 hover:text-blue-700"
+                            }`}
+                          >
+                            {isDescriptionExpanded ? "Show Less" : "Show More"}{" "}
+                            ({countWords(ticket.detailDescription)} words)
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-              <div ref={bottomRef} />
+
+              {/* Messages */}
+              <div className="flex flex-col gap-3">
+                {loading ? (
+                  <p className={isDark ? "text-slate-400" : "text-slate-600"}>
+                    Loading conversation...
+                  </p>
+                ) : messages.length === 0 ? (
+                  <p className={isDark ? "text-slate-400" : "text-slate-600"}>
+                    No messages yet. Start the conversation!
+                  </p>
+                ) : (
+                  messages.map((msg) => {
+                    const isOwnMessage = msg.responseActor === currentActor;
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`max-w-[78%] sm:max-w-[60%] ${msg.responseActor === "ADMIN" ? "self-end" : "self-start"}`}
+                      >
+                        <div
+                          className={`rounded-lg border px-3.5 py-2.5 text-sm ${
+                            isOwnMessage
+                              ? isDark
+                                ? "border-blue-400/70 bg-blue-900/35"
+                                : "border-blue-300 bg-blue-50"
+                              : isDark
+                                ? "border-slate-700 bg-slate-900/80"
+                                : "border-slate-200 bg-white"
+                          }`}
+                        >
+                          <p>{msg.message}</p>
+                        </div>
+                        <div
+                          className={`mt-1 flex gap-2 text-[11px] ${isDark ? "text-slate-400" : "text-slate-600"} ${msg.responseActor === "ADMIN" ? "justify-end" : "justify-start"}`}
+                        >
+                          <span
+                            className={`font-semibold ${actorColor(msg.responseActor)}`}
+                          >
+                            {msg.responseActor}
+                          </span>
+                          <span>
+                            {new Date(msg.createdAt).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+
+                {isOtherTyping && (
+                  <div
+                    className={`max-w-[78%] self-end rounded-lg border px-3 py-2 text-xs italic sm:max-w-[60%] ${isDark ? "border-slate-700 bg-slate-900/80 text-slate-400" : "border-slate-200 bg-white text-slate-600"}`}
+                  >
+                    {typingLabel} is typing...
+                  </div>
+                )}
+                <div ref={bottomRef} />
+              </div>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import express from "express";
-import { llmTest } from "../controllers/llm.test.js";
+import { llmTest } from "../controllers/llm.controller.js";
 import Authenticate from "../middleware/authenticate.js";
 const router = express.Router();
 
