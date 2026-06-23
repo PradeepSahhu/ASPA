@@ -9,6 +9,38 @@ const statusColor = (status) => {
   return "bg-amber-500";
 };
 
+const priorityColor = (score) => {
+  if (score === 4) return "bg-rose-600";
+  if (score === 3) return "bg-orange-500";
+  if (score === 2) return "bg-amber-500";
+  if (score === 1) return "bg-blue-600";
+  return "bg-slate-500";
+};
+
+const priorityLabel = (score) => {
+  if (score === 4) return "Critical";
+  if (score === 3) return "High";
+  if (score === 2) return "Medium";
+  if (score === 1) return "Low";
+  return "Unset";
+};
+
+const CATEGORIES = [
+  "Royalty & Payments",
+  "ISBN & Metadata Issues",
+  "Printing & Quality",
+  "Distribution & Availability",
+  "Book Status & Production Updates",
+  "General Inquiry",
+];
+
+const PRIORITIES = [
+  { value: 4, label: "Critical" },
+  { value: 3, label: "High" },
+  { value: 2, label: "Medium" },
+  { value: 1, label: "Low" },
+];
+
 export function AdminDashboardPage({ isDark, onToggleTheme }) {
   const shellClass = isDark
     ? "bg-[radial-gradient(circle_at_top_left,#12314f_0%,#06080d_58%)] text-slate-100"
@@ -23,6 +55,8 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -43,12 +77,18 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
     }
   };
 
-  const filtered = tickets.filter(
-    (t) =>
+  const filtered = tickets.filter((t) => {
+    const matchesSearch =
       t.header.toLowerCase().includes(search.toLowerCase()) ||
       t.author?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      t.author?.email?.toLowerCase().includes(search.toLowerCase()),
-  );
+      t.author?.email?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesCategory = !categoryFilter || t.category === categoryFilter;
+    const matchesPriority =
+      !priorityFilter || t.priorityScore === parseInt(priorityFilter);
+
+    return matchesSearch && matchesCategory && matchesPriority;
+  });
 
   return (
     <div className={`min-h-screen ${shellClass}`}>
@@ -84,15 +124,56 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
 
       <main className="p-4 sm:p-6">
         <section className={`rounded-xl border p-5 shadow-xl ${panelClass}`}>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold">All Tickets</h3>
-            <input
-              type="text"
-              placeholder="Search by subject or author..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={`w-full max-w-sm rounded-md border px-3 py-2 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
-            />
+          <div className="mb-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">All Tickets</h3>
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setCategoryFilter("");
+                  setPriorityFilter("");
+                }}
+                className={`text-xs px-2 py-1 rounded transition ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900"}`}
+              >
+                Clear Filters
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <input
+                type="text"
+                placeholder="Search by subject or author..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`flex-1 min-w-64 rounded-md border px-3 py-2 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
+              />
+
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className={`rounded-md border px-3 py-2 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
+              >
+                <option value="">All Categories</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className={`rounded-md border px-3 py-2 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
+              >
+                <option value="">All Priorities</option>
+                {PRIORITIES.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {loading ? (
@@ -114,6 +195,7 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
                     <th className="px-3 py-2">Author</th>
                     <th className="px-3 py-2">Email</th>
                     <th className="px-3 py-2">Category</th>
+                    <th className="px-3 py-2">Priority</th>
                     <th className="px-3 py-2">Status</th>
                     <th className="px-3 py-2">Date</th>
                   </tr>
@@ -132,7 +214,20 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
                       <td className="px-3 py-3">
                         {ticket.author?.email || "—"}
                       </td>
-                      <td className="px-3 py-3">{ticket.category || "—"}</td>
+                      <td className="px-3 py-3 text-sm">
+                        {ticket.category || "—"}
+                      </td>
+                      <td className="px-3 py-3">
+                        {ticket.priorityScore ? (
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[11px] text-white ${priorityColor(ticket.priorityScore)}`}
+                          >
+                            {priorityLabel(ticket.priorityScore)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-3">
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[11px] text-white ${statusColor(ticket.status)}`}
