@@ -275,6 +275,131 @@ const OverridePriority = async (req, res) => {
   }
 };
 
+const MarkTicketResolved = async (req, res) => {
+  try {
+    const { ticketId } = req.body;
+
+    if (!ticketId) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(new ApiError(API_CODE.BAD_REQUEST, "ticketId is required"));
+    }
+
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res
+        .status(API_CODE.NOT_FOUND)
+        .json(new ApiError(API_CODE.NOT_FOUND, "Ticket not found"));
+    }
+
+    // Author can resolve only their own tickets. Admin can resolve any ticket.
+    if (req.author && ticket.authorId !== req.author.id) {
+      return res
+        .status(API_CODE.FORBIDDEN)
+        .json(new ApiError(API_CODE.FORBIDDEN, "Forbidden"));
+    }
+
+    if (!req.author && !req.admin) {
+      return res
+        .status(API_CODE.UNAUTHORIZED)
+        .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        status: "RESOLVED",
+        resolvedDate: new Date(),
+      },
+      select: {
+        id: true,
+        status: true,
+        resolvedDate: true,
+        updatedDate: true,
+      },
+    });
+
+    return res
+      .status(API_CODE.ACCEPTED)
+      .json(
+        new ApiResponse(
+          API_CODE.ACCEPTED,
+          updatedTicket,
+          "Ticket marked as resolved",
+        ),
+      );
+  } catch (error) {
+    console.error("Error marking ticket resolved:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while resolving ticket",
+        ),
+      );
+  }
+};
+
+const UnresolveTicket = async (req, res) => {
+  try {
+    const { ticketId } = req.body;
+
+    if (!ticketId) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(new ApiError(API_CODE.BAD_REQUEST, "ticketId is required"));
+    }
+
+    if (!req.admin) {
+      return res
+        .status(API_CODE.FORBIDDEN)
+        .json(new ApiError(API_CODE.FORBIDDEN, "Only admin can unresolve"));
+    }
+
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res
+        .status(API_CODE.NOT_FOUND)
+        .json(new ApiError(API_CODE.NOT_FOUND, "Ticket not found"));
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        status: "OPEN",
+        resolvedDate: null,
+      },
+      select: {
+        id: true,
+        status: true,
+        resolvedDate: true,
+        updatedDate: true,
+      },
+    });
+
+    return res
+      .status(API_CODE.ACCEPTED)
+      .json(
+        new ApiResponse(
+          API_CODE.ACCEPTED,
+          updatedTicket,
+          "Ticket marked as open",
+        ),
+      );
+  } catch (error) {
+    console.error("Error unresolving ticket:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while unresolving ticket",
+        ),
+      );
+  }
+};
+
 const GetTicketDetail = async (req, res) => {
   try {
     const { ticketId } = req.params;
@@ -348,5 +473,7 @@ export {
   GetAuthorTickets,
   GetAllTickets,
   OverridePriority,
+  MarkTicketResolved,
+  UnresolveTicket,
   GetTicketDetail,
 };

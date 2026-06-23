@@ -57,6 +57,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const [error, setError] = useState("");
   const [typingLabel, setTypingLabel] = useState("");
   const [isOtherTyping, setIsOtherTyping] = useState(false);
@@ -292,6 +293,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
 
   const handleSend = async (e) => {
     e.preventDefault();
+    if (ticket?.status === "RESOLVED") return;
     if (!text.trim()) return;
     setSending(true);
     setError("");
@@ -325,6 +327,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   };
 
   const handleInputChange = (e) => {
+    if (ticket?.status === "RESOLVED") return;
     const value = e.target.value;
     setText(value);
 
@@ -361,8 +364,57 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
     setShowMentionMenu(false);
   };
 
+  const handleResolveTicket = async () => {
+    if (!ticketId || ticket?.status === "RESOLVED") return;
+    setResolving(true);
+    setError("");
+    try {
+      const res = await fetch(`${API}/ticket/resolve`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ticketId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Failed to resolve ticket");
+        return;
+      }
+      await fetchTicketDetails();
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const handleUnresolveTicket = async () => {
+    if (!isAdmin || !ticketId || ticket?.status !== "RESOLVED") return;
+    setResolving(true);
+    setError("");
+    try {
+      const res = await fetch(`${API}/ticket/unresolve`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ticketId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Failed to unresolve ticket");
+        return;
+      }
+      await fetchTicketDetails();
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setResolving(false);
+    }
+  };
+
   const backPath = role === "admin" ? "/admin-dashboard" : "/dashboard";
   const currentActor = isAdmin ? "ADMIN" : "AUTHOR";
+  const isResolved = ticket?.status === "RESOLVED";
 
   return (
     <div className={`flex min-h-screen flex-col ${shellClass}`}>
@@ -388,6 +440,27 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {isAdmin && isResolved ? (
+            <button
+              onClick={handleUnresolveTicket}
+              disabled={resolving}
+              className="rounded-full bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {resolving ? "Updating..." : "Unresolve Ticket"}
+            </button>
+          ) : (
+            <button
+              onClick={handleResolveTicket}
+              disabled={resolving || isResolved}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold text-white transition ${isResolved ? "bg-emerald-700/70 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-500"}`}
+            >
+              {isResolved
+                ? "Resolved"
+                : resolving
+                  ? "Resolving..."
+                  : "Mark Resolved"}
+            </button>
+          )}
           <button
             onClick={onToggleTheme}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold text-white transition ${isDark ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}
@@ -476,7 +549,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
           >
             <div className="flex items-center gap-3">
               <div className="relative flex-1">
-                {showMentionMenu && (
+                {showMentionMenu && !isResolved && (
                   <div
                     className={`absolute inset-x-0 bottom-12 z-10 rounded-2xl border p-2 shadow-xl ${panelClass}`}
                   >
@@ -502,22 +575,36 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
 
                 <input
                   type="text"
-                  placeholder="Type a message..."
+                  placeholder={
+                    isResolved
+                      ? "This ticket is resolved. If you think this is a mistake, please create another ticket message."
+                      : "Type a message..."
+                  }
                   value={text}
                   onChange={handleInputChange}
+                  disabled={isResolved}
                   className={`w-full rounded-full border px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={sending || !text.trim()}
+                disabled={isResolved || sending || !text.trim()}
                 className="rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {sending ? "Sending..." : "Send"}
               </button>
             </div>
           </form>
+
+          {isResolved && (
+            <p
+              className={`px-4 pb-2 text-xs ${isDark ? "text-amber-300" : "text-amber-700"}`}
+            >
+              This ticket is resolved. If you think this is a mistake, please
+              create another ticket message.
+            </p>
+          )}
 
           {error && (
             <p
