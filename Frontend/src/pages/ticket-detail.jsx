@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
+import { ThemeToggle } from "../components/theme-toggle.jsx";
 
 const API = "http://localhost:3000";
 
@@ -38,6 +39,29 @@ const getDescriptionPreview = (text, isExpanded) => {
   if (isExpanded) return text;
   return words.slice(0, 200).join(" ") + "...";
 };
+
+const normalizeLLMContent = (payload) => {
+  if (payload === null || payload === undefined) return "No response from LLM";
+  if (typeof payload === "string") return payload;
+  if (typeof payload === "number" || typeof payload === "boolean") {
+    return String(payload);
+  }
+
+  if (typeof payload === "object") {
+    if (typeof payload.result === "string") return payload.result;
+    if (typeof payload.message === "string") return payload.message;
+
+    try {
+      return JSON.stringify(payload);
+    } catch {
+      return "No response from LLM";
+    }
+  }
+
+  return "No response from LLM";
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const PRIORITIES = [
   { value: 1, label: "Low" },
@@ -90,6 +114,10 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const [llmInput, setLlmInput] = useState("");
   const [activePanel, setActivePanel] = useState("info"); // info, llm
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [aiDraft, setAiDraft] = useState("");
+  const [editedDraft, setEditedDraft] = useState("");
+  const [isEditingDraft, setIsEditingDraft] = useState(false);
+  const [isSendingDraft, setIsSendingDraft] = useState(false);
 
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
@@ -147,6 +175,10 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
         if (Array.isArray(data.data.notes)) {
           setNotes(data.data.notes);
         }
+        if (isAdmin && data.data.aiDraft) {
+          setAiDraft(data.data.aiDraft);
+          setEditedDraft(data.data.aiDraft);
+        }
       }
     } catch (err) {
       console.error("Error fetching ticket:", err);
@@ -188,6 +220,34 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
       setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const pollForLlmConversationMessage = async (baselineCount) => {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      await sleep(1500);
+
+      try {
+        const res = await fetch(`${API}/conversation/${ticketId}`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+
+        if (!res.ok) continue;
+
+        const nextMessages = data.data || [];
+        setMessages(nextMessages);
+
+        const hasNewLlmMessage = nextMessages
+          .slice(baselineCount)
+          .some((message) => message.responseActor === "LLM");
+
+        if (hasNewLlmMessage) {
+          return;
+        }
+      } catch (error) {
+        console.error("Error polling for LLM message:", error);
+      }
     }
   };
 
@@ -294,15 +354,45 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
       });
       if (res.ok) {
         const data = await res.json();
+        const llmText = normalizeLLMContent(data.response || data.data);
         setLlmChat((prev) => [
           ...prev,
-          { role: "assistant", content: data.response },
+          { role: "assistant", content: llmText },
         ]);
       }
     } catch (error) {
       console.error("Error with LLM chat:", error);
     }
     setLlmInput("");
+  };
+
+  const handleSendDraft = async () => {
+    if (!editedDraft.trim()) return;
+    setIsSendingDraft(true);
+    setError("");
+    try {
+      const res = await fetch(`${API}/conversation/${ticketId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message: editedDraft.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Failed to send draft");
+        return;
+      }
+
+      // Reset draft state after successful send
+      setEditedDraft("");
+      setIsEditingDraft(false);
+      fetchMessages();
+    } catch (error) {
+      console.error("Error sending draft:", error);
+      setError("Failed to send draft");
+    } finally {
+      setIsSendingDraft(false);
+    }
   };
 
   const handleSend = async (e) => {
@@ -319,8 +409,8 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
         });
       }
 
-      // Check if message mentions ASPA_LLM
-      const hasLLMMention = text.includes("@ASPA_LLM");
+      // Check if message mentions ASPA_LLM or ASTRA_LLM
+      const hasLLMMention = /@(?:ASPA|ASTRA)_LLM\b/i.test(text);
       const messageToSend = text.trim();
 
       // First, send the user message to save it
@@ -339,27 +429,28 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
       // If message mentions ASPA_LLM, send to LLM endpoint
       if (hasLLMMention) {
         // Extract message without the mention
-        const llmPrompt = messageToSend.replace(/@ASPA_LLM\s*/g, "").trim();
+        const llmPrompt = messageToSend
+          .replace(/@(?:ASPA|ASTRA)_LLM\s*/gi, "")
+          .trim();
+
+        if (!llmPrompt) {
+          setError("Please add a prompt after @ASTRA_LLM");
+          return;
+        }
 
         try {
           const llmRes = await fetch(`${API}/llm`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ prompt: llmPrompt }),
+            body: JSON.stringify({
+              ticketId,
+              prompt: llmPrompt,
+            }),
           });
 
           if (llmRes.ok) {
-            const llmData = await llmRes.json();
-            // Show LLM response in the LLM chat panel (not in ticket messages)
-            const responseMessage =
-              llmData.data || llmData.response || "No response from LLM";
-            setLlmChat((prev) => [
-              ...prev,
-              { role: "user", content: llmPrompt },
-              { role: "assistant", content: responseMessage },
-            ]);
-            setActivePanel("llm"); // Switch to LLM panel to show response
+            pollForLlmConversationMessage(messages.length);
           }
         } catch (llmError) {
           console.error("Error calling LLM:", llmError);
@@ -412,6 +503,19 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
     const updatedValue = text.replace(/(^|\s)@([^\s]*)$/, "$1@ASPA_LLM ");
     setText(updatedValue);
     setShowMentionMenu(false);
+  };
+
+  const handleInputKeyDown = (e) => {
+    if (!showMentionMenu || isResolved) return;
+
+    if (e.key === "Tab" || e.key === "Enter") {
+      e.preventDefault();
+      handleMentionSelect();
+    }
+
+    if (e.key === "Escape") {
+      setShowMentionMenu(false);
+    }
   };
 
   const handleResolveTicket = async () => {
@@ -511,12 +615,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                   : "Mark Resolved"}
             </button>
           )}
-          <button
-            onClick={onToggleTheme}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold text-white transition ${isDark ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}
-          >
-            {isDark ? "Light Theme" : "Black Theme"}
-          </button>
+          <ThemeToggle isDark={isDark} onToggleTheme={onToggleTheme} />
           <span
             className={`text-xs sm:text-sm ${isDark ? "text-slate-300" : "text-slate-700"}`}
           >
@@ -526,7 +625,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
       </header>
 
       <main
-        className={`flex flex-row flex-1 gap-4 overflow-hidden ${isAdmin ? "p-4 sm:p-6" : ""}`}
+        className={`flex flex-row flex-1 gap-4 overflow-hidden ${isAdmin ? "p-4 sm:p-6 lg:pr-92" : ""}`}
       >
         {/* Main Chat Area */}
         <div
@@ -677,6 +776,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                   }
                   value={text}
                   onChange={handleInputChange}
+                  onKeyDown={handleInputKeyDown}
                   disabled={isResolved}
                   className={`w-full rounded-full border px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 ${inputClass}`}
                 />
@@ -713,7 +813,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
         {/* Admin Right Panel */}
         {isAdmin && ticket && (
           <div
-            className={`w-80 shrink-0 flex flex-col gap-2 overflow-hidden rounded-lg border ${panelClass}`}
+            className={`w-80 shrink-0 flex flex-col gap-2 overflow-hidden rounded-lg border lg:fixed lg:right-6 lg:top-23 lg:h-[calc(100vh-116px)] ${panelClass}`}
           >
             {/* Panel Tabs */}
             <div className="flex gap-2 border-b p-3">
@@ -731,6 +831,22 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
               >
                 Info
               </button>
+              {aiDraft && (
+                <button
+                  onClick={() => setActivePanel("draft")}
+                  className={`flex-1 px-2 py-1 text-xs font-semibold rounded transition ${
+                    activePanel === "draft"
+                      ? isDark
+                        ? "bg-emerald-600/40 text-emerald-200"
+                        : "bg-emerald-100 text-emerald-700"
+                      : isDark
+                        ? "text-slate-400 hover:text-slate-300"
+                        : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Draft
+                </button>
+              )}
               <button
                 onClick={() => setActivePanel("llm")}
                 className={`flex-1 px-2 py-1 text-xs font-semibold rounded transition ${
@@ -940,6 +1056,87 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                       Add Note
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Draft Panel */}
+            {activePanel === "draft" && aiDraft && (
+              <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
+                <div className="space-y-2">
+                  <p
+                    className={`text-xs font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
+                    AI-GENERATED DRAFT
+                  </p>
+                  <p
+                    className={`text-xs ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
+                    Review and edit the AI-generated response before sending to
+                    the author.
+                  </p>
+                </div>
+
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {isEditingDraft ? (
+                    <textarea
+                      value={editedDraft}
+                      onChange={(e) => setEditedDraft(e.target.value)}
+                      className={`flex-1 rounded-md border px-3 py-2 text-xs outline-none resize-none ${inputClass}`}
+                      placeholder="Edit the draft here..."
+                    />
+                  ) : (
+                    <div
+                      className={`flex-1 overflow-y-auto rounded-md border p-3 text-xs ${
+                        isDark
+                          ? "border-slate-700 bg-slate-950"
+                          : "border-slate-300 bg-slate-50"
+                      }`}
+                    >
+                      {editedDraft || aiDraft}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  {isEditingDraft ? (
+                    <>
+                      <button
+                        onClick={() => setIsEditingDraft(false)}
+                        disabled={isSendingDraft}
+                        className="flex-1 rounded-md bg-amber-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-500 disabled:opacity-50"
+                      >
+                        Done Editing
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditedDraft(aiDraft);
+                          setIsEditingDraft(false);
+                        }}
+                        disabled={isSendingDraft}
+                        className="flex-1 rounded-md bg-slate-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-500 disabled:opacity-50"
+                      >
+                        Reset
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setIsEditingDraft(true)}
+                        disabled={isSendingDraft}
+                        className="flex-1 rounded-md bg-blue-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={handleSendDraft}
+                        disabled={isSendingDraft || !editedDraft.trim()}
+                        className="flex-1 rounded-md bg-emerald-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSendingDraft ? "Sending..." : "Send Draft"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}

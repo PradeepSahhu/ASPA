@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { AuthorDashboardPage } from "./pages/author-dashboard.jsx";
 import { AdminDashboardPage } from "./pages/admin-dashboard.jsx";
 import { TicketDetailPage } from "./pages/ticket-detail.jsx";
+import { ThemeToggle } from "./components/theme-toggle.jsx";
 
 function HomePage({ isDark, onToggleTheme }) {
   const pageClass = isDark
@@ -71,12 +72,7 @@ function HomePage({ isDark, onToggleTheme }) {
   return (
     <div className={`relative min-h-screen px-4 py-8 sm:px-6 ${pageClass}`}>
       <div className="absolute right-4 top-4 flex gap-2 sm:right-6 sm:top-6">
-        <button
-          onClick={onToggleTheme}
-          className={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition ${isDark ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}
-        >
-          {isDark ? "Light Theme" : "Black Theme"}
-        </button>
+        <ThemeToggle isDark={isDark} onToggleTheme={onToggleTheme} />
         <button
           onClick={() => {
             setIsAdmin(!isAdmin);

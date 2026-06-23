@@ -2,19 +2,52 @@ import { Worker } from "bullmq";
 import { connection } from "../queue/redis.js";
 import prisma from "../utility/database/index.js";
 import { callLLM } from "../llm/lllm.js";
+import { LlmInvoke } from "../llm/lllm.js";
+import { ROLE } from "../utility/constants/role.constants.js";
 import { CLASSIFICATION_AND_PRIORITY_SCORE } from "../llm/Prompts/classificationAndPriorityScore.prompt.js";
+import { GENERATE_DRAFT_PROMPT } from "../llm/Prompts/generateDraft.prompt.js";
 
 const worker = new Worker(
   "ticket-processing",
 
   async (job) => {
-    console.log("📋 Processing ticket", job.data.ticketId);
-    try {
-      const ticketId = job.data.ticketId;
+    if (job.name === "llm-chat") {
+      const { prompt, authorId, ticketId } = job.data || {};
+
+      if (!prompt) {
+        throw new Error("Missing prompt for llm-chat job");
+      }
 
       if (!ticketId) {
-        console.error("No ticketId provided");
-        throw new Error("Missing ticketId");
+        throw new Error("Missing ticketId for llm-chat job");
+      }
+
+      const llmResult = await LlmInvoke(prompt, authorId);
+
+      const normalizedMessage =
+        typeof llmResult === "string" ? llmResult : JSON.stringify(llmResult);
+
+      const savedMessage = await prisma.ticketMessage.create({
+        data: {
+          ticketId,
+          responseActor: ROLE.LLM,
+          message: normalizedMessage,
+        },
+      });
+
+      return {
+        success: true,
+        type: "llm-chat",
+        ticketId,
+        messageId: savedMessage.id,
+      };
+    }
+
+    if (job.name === "generate-draft") {
+      const { ticketId } = job.data || {};
+
+      if (!ticketId) {
+        throw new Error("Missing ticketId for generate-draft job");
       }
 
       const ticket = await prisma.ticket.findUnique({
@@ -23,71 +56,119 @@ const worker = new Worker(
           id: true,
           header: true,
           detailDescription: true,
-          priorityScore: true,
+          authorId: true,
         },
       });
 
       if (!ticket) {
-        console.error(" Ticket not found:", ticketId);
         throw new Error(`Ticket not found: ${ticketId}`);
       }
 
-      console.log("✅ Ticket found:", ticket.id);
-      console.log("📝 Processing content...");
-      console.log(`   Header: ${ticket.header}`);
-      console.log(
-        `   Description: ${ticket.detailDescription.substring(0, 100)}...`,
-      );
+      const userPrompt = `The author has submitted the following support ticket:
 
-      const userPrompt = `TICKET TO PROCESS:
+Ticket Header: "${ticket.header}"
+Ticket Description: "${ticket.detailDescription}"
+
+Please generate a professional and helpful draft response for this ticket.`;
+
+      const draftResponse = await callLLM({
+        systemPrompt: GENERATE_DRAFT_PROMPT,
+        userPrompt,
+      });
+
+      const normalizedDraft =
+        typeof draftResponse === "string"
+          ? draftResponse
+          : JSON.stringify(draftResponse);
+
+      const updatedTicket = await prisma.ticket.update({
+        where: { id: ticketId },
+        data: { aiDraft: normalizedDraft },
+        select: {
+          id: true,
+          header: true,
+          aiDraft: true,
+        },
+      });
+
+      return {
+        success: true,
+        type: "generate-draft",
+        ticketId,
+        draftGenerated: true,
+      };
+    }
+
+    if (job.name !== "categorize-ticket") {
+      return { success: false, skipped: true, jobName: job.name };
+    }
+
+    const ticketId = job.data.ticketId;
+
+    if (!ticketId) {
+      throw new Error("Missing ticketId");
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        header: true,
+        detailDescription: true,
+        priorityScore: true,
+      },
+    });
+
+    if (!ticket) {
+      throw new Error(`Ticket not found: ${ticketId}`);
+    }
+
+    const userPrompt = `TICKET TO PROCESS:
 Ticket ID: "${ticket.id}"
 Header: "${ticket.header}"
 Description: "${ticket.detailDescription}"
 
 Please assign a priority score and also the Category for this ticket and update it in DB using the tools.`;
 
-      console.log("🤖 Calling LLM for priority analysis...");
-      const llmResult = await callLLM({
-        systemPrompt: CLASSIFICATION_AND_PRIORITY_SCORE,
-        userPrompt,
-      });
-      console.log("✅ LLM Processing completed");
-      console.log(`🎯 Result: ${llmResult}`);
+    await callLLM({
+      systemPrompt: CLASSIFICATION_AND_PRIORITY_SCORE,
+      userPrompt,
+    });
 
-      // Fetch updated ticket to confirm changes
-      const updatedTicket = await prisma.ticket.findUnique({
-        where: { id: ticketId },
-        select: {
-          id: true,
-          header: true,
-          priorityScore: true,
-          status: true,
-          updatedDate: true,
-        },
-      });
+    const updatedTicket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        header: true,
+        priorityScore: true,
+        status: true,
+        updatedDate: true,
+      },
+    });
 
-      console.log("✅ Final ticket state:");
-      console.table(updatedTicket);
-
-      return {
-        success: true,
-        ticketId,
-        priorityScore: updatedTicket.priorityScore,
-        message: "Ticket prioritized successfully",
-      };
-    } catch (error) {
-      console.error("❌ Error processing ticket:", error.message);
-      throw error;
-    }
+    return {
+      success: true,
+      type: "categorize-ticket",
+      ticketId,
+      priorityScore: updatedTicket.priorityScore,
+      message: "Ticket prioritized successfully",
+    };
   },
-  { connection },
+  {
+    connection,
+    concurrency: 1,
+    settings: {
+      lockDuration: 1000,
+      lockRenewTime: 500,
+      maxStalledCount: 2,
+      stalledInterval: 300,
+      retryProcessDelay: 100,
+    },
+  },
 );
 
-worker.on("ready", () => console.log("✅ Worker ready and listening..."));
-worker.on("error", (err) => console.error("❌ Worker error:", err));
-worker.on("failed", (job, err) =>
-  console.error("❌ Job failed:", job.id, err.message),
-);
-worker.on("completed", (job) => console.log("✅ Job completed:", job.id));
-
-console.log("✅ Worker started and listening for categorize-ticket jobs...");
+process.on("SIGINT", async () => {
+  await worker.close();
+  await prisma.$disconnect();
+  process.exit(0);
+});

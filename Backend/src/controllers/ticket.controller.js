@@ -61,6 +61,12 @@ const CreateNewTicket = async (req, res) => {
       { jobId: `categorize-ticket-${createdTicket.id}` },
     );
 
+    await ticketQueue.add(
+      "generate-draft",
+      { ticketId: createdTicket.id },
+      { jobId: `generate-draft-${createdTicket.id}` },
+    );
+
     return res
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, createdTicket, "success"));
@@ -425,6 +431,7 @@ const GetTicketDetail = async (req, res) => {
     };
 
     if (req.admin) {
+      ticketSelect.aiDraft = true;
       ticketSelect.notes = {
         where: { visibility: "ADMIN" },
         select: {

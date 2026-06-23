@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "../components/theme-toggle.jsx";
 
 const API = "http://localhost:3000";
 
@@ -98,12 +99,7 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Admin Dashboard</h2>
           <div className="flex items-center gap-2">
-            <button
-              onClick={onToggleTheme}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold text-white transition ${isDark ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}
-            >
-              {isDark ? "Light Theme" : "Black Theme"}
-            </button>
+            <ThemeToggle isDark={isDark} onToggleTheme={onToggleTheme} />
             <span
               className={`hidden text-sm sm:inline ${isDark ? "text-slate-400" : "text-slate-600"}`}
             >
