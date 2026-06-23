@@ -112,6 +112,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState("");
   const [llmChat, setLlmChat] = useState([]);
+
   const [llmInput, setLlmInput] = useState("");
   const [activePanel, setActivePanel] = useState("info"); // info, llm
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -119,7 +120,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const [editedDraft, setEditedDraft] = useState("");
   const [isEditingDraft, setIsEditingDraft] = useState(false);
   const [isSendingDraft, setIsSendingDraft] = useState(false);
-
+  const [isAssigning, setIsAssigning] = useState(false);
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -273,6 +274,25 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
     }
   };
 
+  const handleAssignTicket = async () => {
+    if (!user.id) return;
+    setIsAssigning(true);
+    try {
+      const res = await fetch(`${API}/ticket/assign/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ assignedId: user.id }),
+      });
+      if (res.ok) {
+        fetchTicketDetails();
+      }
+    } catch (error) {
+      console.error("Error assigning ticket:", error);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     try {
@@ -674,6 +694,19 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                         )}
                       </div>
                     )}
+
+                    <div
+                      className={`flex flex-wrap items-center gap-2 text-xs ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                    >
+                      <span className="font-semibold">Assigned to:</span>
+                      <span
+                        className={`rounded-full px-2.5 py-1 ${isDark ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}
+                      >
+                        {ticket.assignedAdmin?.name ||
+                          ticket.assignedAdmin?.email ||
+                          "Unassigned"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -935,11 +968,65 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                   <p
                     className={`text-xs font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
                   >
+                    ASSIGNEE
+                  </p>
+                  <div className="space-y-2">
+                    {ticket.assignedAdmin ? (
+                      <div
+                        className={`rounded-md border px-2 py-1.5 text-xs ${isDark ? "border-slate-700 bg-slate-900/50" : "border-slate-200 bg-slate-50"}`}
+                      >
+                        <p className="font-semibold">
+                          {ticket.assignedAdmin.name}
+                        </p>
+                        <p
+                          className={
+                            isDark ? "text-slate-400" : "text-slate-600"
+                          }
+                        >
+                          {ticket.assignedAdmin.email}
+                        </p>
+                      </div>
+                    ) : (
+                      <p
+                        className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                      >
+                        Unassigned
+                      </p>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={handleAssignTicket}
+                        disabled={
+                          isAssigning || ticket.assignedAdmin?.id === user.id
+                        }
+                        className={`w-full rounded-md px-2 py-1.5 text-xs font-semibold transition ${
+                          ticket.assignedAdmin?.id === user.id
+                            ? isDark
+                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                              : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                            : isDark
+                              ? "bg-blue-600 text-white hover:bg-blue-500"
+                              : "bg-blue-500 text-white hover:bg-blue-600"
+                        }`}
+                      >
+                        {isAssigning
+                          ? "Assigning..."
+                          : ticket.assignedAdmin?.id === user.id
+                            ? "Assigned to You"
+                            : "Assign to Me"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p
+                    className={`text-xs font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
                     STATUS
                   </p>
                   <p className="text-sm">{ticket.status}</p>
                 </div>
-
                 <div className="space-y-2">
                   <p
                     className={`text-xs font-semibold ${isDark ? "text-slate-400" : "text-slate-600"}`}

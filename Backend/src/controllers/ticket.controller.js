@@ -146,6 +146,13 @@ const GetAuthorTickets = async (req, res) => {
         category: true,
         priorityScore: true,
         createdDate: true,
+        assignedAdmin: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
     });
 
@@ -176,7 +183,7 @@ const GetAllTickets = async (req, res) => {
     }
 
     const tickets = await prisma.ticket.findMany({
-      orderBy: { createdDate: "desc" },
+      orderBy: [{ priorityScore: "desc" }, { createdDate: "desc" }],
       select: {
         id: true,
         header: true,
@@ -425,11 +432,14 @@ const GetTicketDetail = async (req, res) => {
       priorityScore: true,
       createdDate: true,
       updatedDate: true,
+      assignedId: true,
+      assignedAdmin: {
+        select: { id: true, name: true, email: true },
+      },
       author: {
         select: { id: true, name: true, email: true },
       },
     };
-
     if (req.admin) {
       ticketSelect.aiDraft = true;
       ticketSelect.notes = {
@@ -474,6 +484,59 @@ const GetTicketDetail = async (req, res) => {
   }
 };
 
+const AssignTicket = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const { assignedId } = req.body;
+
+    if (!req.admin) {
+      return res
+        .status(API_CODE.UNAUTHORIZED)
+        .json(
+          new ApiError(API_CODE.UNAUTHORIZED, "Only admins can assign tickets"),
+        );
+    }
+
+    if (!ticketId) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(new ApiError(API_CODE.BAD_REQUEST, "ticketId is required"));
+    }
+
+    const ticket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { assignedId },
+      select: {
+        id: true,
+        assignedId: true,
+        assignedAdmin: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    return res
+      .status(API_CODE.ACCEPTED)
+      .json(
+        new ApiResponse(
+          API_CODE.ACCEPTED,
+          ticket,
+          "Ticket assigned successfully",
+        ),
+      );
+  } catch (error) {
+    console.error("Error assigning ticket:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while assigning ticket",
+        ),
+      );
+  }
+};
+
 export {
   CreateNewTicket,
   updateCategory,
@@ -483,4 +546,5 @@ export {
   MarkTicketResolved,
   UnresolveTicket,
   GetTicketDetail,
+  AssignTicket,
 };

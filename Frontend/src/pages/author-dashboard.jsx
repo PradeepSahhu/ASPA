@@ -107,6 +107,13 @@ export function AuthorDashboardPage({ isDark, onToggleTheme }) {
     return "bg-amber-500";
   };
 
+  const getAssigneeLabel = (ticket) => {
+    if (!ticket.assignedAdmin) return "Unassigned";
+    return (
+      ticket.assignedAdmin.name || ticket.assignedAdmin.email || "Assigned"
+    );
+  };
+
   return (
     <div className={`min-h-screen ${shellClass}`}>
       <header
@@ -254,6 +261,11 @@ export function AuthorDashboardPage({ isDark, onToggleTheme }) {
                       {ticket.category}
                     </p>
                   )}
+                  <p
+                    className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
+                    Assigned to: {getAssigneeLabel(ticket)}
+                  </p>
                 </li>
               ))}
             </ul>

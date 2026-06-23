@@ -78,18 +78,29 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
     }
   };
 
-  const filtered = tickets.filter((t) => {
-    const matchesSearch =
-      t.header.toLowerCase().includes(search.toLowerCase()) ||
-      t.author?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      t.author?.email?.toLowerCase().includes(search.toLowerCase());
+  const filtered = tickets
+    .filter((t) => {
+      const matchesSearch =
+        t.header.toLowerCase().includes(search.toLowerCase()) ||
+        t.author?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        t.author?.email?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesCategory = !categoryFilter || t.category === categoryFilter;
-    const matchesPriority =
-      !priorityFilter || t.priorityScore === parseInt(priorityFilter);
+      const matchesCategory = !categoryFilter || t.category === categoryFilter;
+      const matchesPriority =
+        !priorityFilter || t.priorityScore === parseInt(priorityFilter);
 
-    return matchesSearch && matchesCategory && matchesPriority;
-  });
+      return matchesSearch && matchesCategory && matchesPriority;
+    })
+    .sort((left, right) => {
+      const priorityDiff =
+        (right.priorityScore || 0) - (left.priorityScore || 0);
+
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      return new Date(right.createdDate) - new Date(left.createdDate);
+    });
 
   return (
     <div className={`min-h-screen ${shellClass}`}>
