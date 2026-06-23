@@ -1,44 +1,71 @@
 import { ApiError } from "../utility/api.error.js";
 import { ApiResponse } from "../utility/api.response.js";
 import { API_CODE } from "../utility/constants/api.constants.js";
+import {
+  PRIORITY_LABELS,
+  PRIORITY_SCORES,
+} from "../utility/constants/priority.constants.js";
+import { ticketQueue } from "../queue/ticket.queue.js";
 import prisma from "../utility/database/index.js";
 
 const CreateNewTicket = async (req, res) => {
-  const { header, description, bookId } = req.body;
-  const author = req.author;
+  try {
+    const { header, description, bookId } = req.body;
+    const author = req.author;
 
-  if (!author) {
+    if (!author) {
+      return res
+        .status(API_CODE.UNAUTHORIZED)
+        .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+    }
+
+    if (!header || !description) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(
+          new ApiError(
+            API_CODE.BAD_REQUEST,
+            "Header and description are required",
+          ),
+        );
+    }
+
+    const newTicket = await prisma.ticket.create({
+      data: {
+        ...(bookId && { bookId }),
+        authorId: author.id,
+        header,
+        detailDescription: description,
+        status: "OPEN",
+      },
+    });
+
+    const createdTicket = await prisma.ticket.findUnique({
+      where: { id: newTicket.id },
+    });
+
+    if (!createdTicket) {
+      return res
+        .status(API_CODE.INTERNAL_SERVER_ERROR)
+        .json(
+          new ApiError(
+            API_CODE.INTERNAL_SERVER_ERROR,
+            "Something went wrong while creating the ticket",
+          ),
+        );
+    }
+
+    await ticketQueue.add(
+      "categorize-ticket",
+      { ticketId: createdTicket.id },
+      { jobId: `categorize-ticket-${createdTicket.id}` },
+    );
+
     return res
-      .status(API_CODE.UNAUTHORIZED)
-      .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
-  }
-
-  if (!header || !description) {
-    return res
-      .status(API_CODE.BAD_REQUEST)
-      .json(
-        new ApiError(
-          API_CODE.BAD_REQUEST,
-          "Header and description are required",
-        ),
-      );
-  }
-
-  const newTicket = await prisma.ticket.create({
-    data: {
-      ...(bookId && { bookId }),
-      authorId: author.id,
-      header,
-      detailDescription: description,
-      status: "OPEN",
-    },
-  });
-
-  const createdTicket = await prisma.ticket.findUnique({
-    where: { id: newTicket.id },
-  });
-
-  if (!createdTicket) {
+      .status(API_CODE.ACCEPTED)
+      .json(new ApiResponse(API_CODE.ACCEPTED, createdTicket, "success"));
+  } catch (error) {
+    console.error("Error creating ticket:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -48,95 +75,210 @@ const CreateNewTicket = async (req, res) => {
         ),
       );
   }
-
-  return res
-    .status(API_CODE.ACCEPTED)
-    .json(new ApiResponse(API_CODE.ACCEPTED, createdTicket, "success"));
 };
 
 const updateCategory = async (req, res) => {
-  const { ticketId, category } = req.body;
+  try {
+    const { ticketId, category } = req.body;
 
-  if (!ticketId || !category) {
+    if (!ticketId || !category) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(
+          new ApiError(
+            API_CODE.BAD_REQUEST,
+            "ticketId and category are required",
+          ),
+        );
+    }
+
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res
+        .status(API_CODE.NOT_FOUND)
+        .json(new ApiError(API_CODE.NOT_FOUND, "Ticket not found"));
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { category },
+    });
+
     return res
-      .status(API_CODE.BAD_REQUEST)
+      .status(API_CODE.ACCEPTED)
+      .json(new ApiResponse(API_CODE.ACCEPTED, updatedTicket, "success"));
+  } catch (error) {
+    console.error("Error updating ticket category:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
         new ApiError(
-          API_CODE.BAD_REQUEST,
-          "ticketId and category are required",
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while updating the ticket",
         ),
       );
   }
-
-  const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
-  if (!ticket) {
-    return res
-      .status(API_CODE.NOT_FOUND)
-      .json(new ApiError(API_CODE.NOT_FOUND, "Ticket not found"));
-  }
-
-  const updatedTicket = await prisma.ticket.update({
-    where: { id: ticketId },
-    data: { category },
-  });
-
-  return res
-    .status(API_CODE.ACCEPTED)
-    .json(new ApiResponse(API_CODE.ACCEPTED, updatedTicket, "success"));
 };
 
 const GetAuthorTickets = async (req, res) => {
-  const author = req.author;
+  try {
+    const author = req.author;
 
-  if (!author) {
+    if (!author) {
+      return res
+        .status(API_CODE.UNAUTHORIZED)
+        .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+    }
+
+    const tickets = await prisma.ticket.findMany({
+      where: { authorId: author.id },
+      orderBy: { createdDate: "desc" },
+      select: {
+        id: true,
+        header: true,
+        status: true,
+        category: true,
+        priorityScore: true,
+        createdDate: true,
+      },
+    });
+
     return res
-      .status(API_CODE.UNAUTHORIZED)
-      .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+      .status(API_CODE.ACCEPTED)
+      .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
+  } catch (error) {
+    console.error("Error fetching author tickets:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while fetching tickets",
+        ),
+      );
   }
-
-  const tickets = await prisma.ticket.findMany({
-    where: { authorId: author.id },
-    orderBy: { createdDate: "desc" },
-    select: {
-      id: true,
-      header: true,
-      status: true,
-      category: true,
-      createdDate: true,
-    },
-  });
-
-  return res
-    .status(API_CODE.ACCEPTED)
-    .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
 };
 
 const GetAllTickets = async (req, res) => {
-  const admin = req.admin;
+  try {
+    const admin = req.admin;
 
-  if (!admin) {
-    return res
-      .status(API_CODE.UNAUTHORIZED)
-      .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
-  }
+    if (!admin) {
+      return res
+        .status(API_CODE.UNAUTHORIZED)
+        .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+    }
 
-  const tickets = await prisma.ticket.findMany({
-    orderBy: { createdDate: "desc" },
-    select: {
-      id: true,
-      header: true,
-      status: true,
-      category: true,
-      createdDate: true,
-      author: {
-        select: { id: true, name: true, email: true },
+    const tickets = await prisma.ticket.findMany({
+      orderBy: { createdDate: "desc" },
+      select: {
+        id: true,
+        header: true,
+        status: true,
+        category: true,
+        priorityScore: true,
+        createdDate: true,
+        author: {
+          select: { id: true, name: true, email: true },
+        },
       },
-    },
-  });
+    });
 
-  return res
-    .status(API_CODE.ACCEPTED)
-    .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
+    return res
+      .status(API_CODE.ACCEPTED)
+      .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
+  } catch (error) {
+    console.error("Error fetching all tickets:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while fetching tickets",
+        ),
+      );
+  }
 };
 
-export { CreateNewTicket, updateCategory, GetAuthorTickets, GetAllTickets };
+const OverridePriority = async (req, res) => {
+  try {
+    const admin = req.admin;
+    const { ticketId, priorityScore } = req.body;
+
+    if (!admin) {
+      return res
+        .status(API_CODE.UNAUTHORIZED)
+        .json(new ApiError(API_CODE.UNAUTHORIZED, "Unauthorized"));
+    }
+
+    if (!ticketId || priorityScore === undefined) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(
+          new ApiError(
+            API_CODE.BAD_REQUEST,
+            "ticketId and priorityScore are required",
+          ),
+        );
+    }
+
+    if (!PRIORITY_SCORES.includes(priorityScore)) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(
+          new ApiError(
+            API_CODE.BAD_REQUEST,
+            `Priority score must be one of: ${PRIORITY_SCORES.join(", ")}`,
+          ),
+        );
+    }
+
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res
+        .status(API_CODE.NOT_FOUND)
+        .json(new ApiError(API_CODE.NOT_FOUND, "Ticket not found"));
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { priorityScore },
+      select: {
+        id: true,
+        header: true,
+        category: true,
+        priorityScore: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    return res
+      .status(API_CODE.ACCEPTED)
+      .json(
+        new ApiResponse(
+          API_CODE.ACCEPTED,
+          updatedTicket,
+          `Priority override to ${PRIORITY_LABELS[priorityScore]} completed`,
+        ),
+      );
+  } catch (error) {
+    console.error("Error overriding ticket priority:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while overriding ticket priority",
+        ),
+      );
+  }
+};
+
+export {
+  CreateNewTicket,
+  updateCategory,
+  GetAuthorTickets,
+  GetAllTickets,
+  OverridePriority,
+};

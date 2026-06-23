@@ -1,9 +1,12 @@
-import { tool } from "@langchain/core/tools";
 import * as z from "zod";
-export const constFinalAnswerTool = tool(async ({ answer }) => answer, {
+
+const FinalAnswerSchema = z.object({
+  answer: z.string(),
+});
+
+export const constFinalAnswerTool = {
   name: "final_answer",
   description: "Call this when you have completed the task.",
-  schema: z.object({
-    answer: z.string(),
-  }),
-});
+  schema: FinalAnswerSchema,
+  execute: async ({ answer }) => answer,
+};

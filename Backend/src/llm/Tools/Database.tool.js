@@ -1,11 +1,19 @@
 import * as z from "zod";
-import { tool } from "@langchain/core/tools";
 import prisma from "../../utility/database/index.js";
 
-// Will give DB READ access to my llm. Why? so that user can know some more information in the chat
+const GetAuthorInfoSchema = z.object({
+  userId: z.string().describe("The unique id of the author"),
+});
 
-export const GetAuthorInfo = tool(
-  async (userId) => {
+const GetAuthorBooksSchema = z.object({
+  userId: z.string().describe("The unique id of the author"),
+});
+
+export const GetAuthorInfo = {
+  name: "get_author_info",
+  description: "Get information about a specific author using their author id.",
+  schema: GetAuthorInfoSchema,
+  execute: async ({ userId }) => {
     const author = await prisma.author.findUnique({ where: { id: userId } });
 
     if (!author) {
@@ -14,16 +22,14 @@ export const GetAuthorInfo = tool(
 
     return `Author name: ${author.name || author.email}, Email: ${author.email}.`;
   },
-  {
-    name: "get_author_info",
-    description:
-      "Get information about a specific author using their author id.",
-    schema: z.string().describe("The unique id of the author"),
-  },
-);
+};
 
-export const GetAuthorBooks = tool(
-  async (userId) => {
+export const GetAuthorBooks = {
+  name: "get_author_books",
+  description:
+    "Get all books published by a specific author using the author id.",
+  schema: GetAuthorBooksSchema,
+  execute: async ({ userId }) => {
     const author = await prisma.author.findUnique({ where: { id: userId } });
 
     if (!author) {
@@ -43,10 +49,4 @@ export const GetAuthorBooks = tool(
 
     return `Author ${author.name || author.email || userId} has published these books: ${titles}.`;
   },
-  {
-    name: "get_author_books",
-    description:
-      "Get all books published by a specific author using the author id.",
-    schema: z.string().describe("The unique id of the author"),
-  },
-);
+};

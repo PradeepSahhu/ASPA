@@ -2,31 +2,49 @@ import { ToolMessage } from "@langchain/core/messages";
 import { toolRegistry } from "../Registry/toolRegistry.js";
 
 const executeSingleToolCall = async (toolCall, userId) => {
+  // Handle final_answer specially - it terminates execution
   if (toolCall.name === "final_answer") {
     return {
       isFinal: true,
-      result: toolCall.args?.answer,
+      result: toolCall.args?.answer || toolCall.args,
     };
   }
 
-  const tool = toolRegistry[toolCall.name];
-  if (!tool) {
+  // Look up tool in registry
+  const toolDef = toolRegistry[toolCall.name];
+  if (!toolDef) {
     return {
       isFinal: false,
       result: null,
     };
   }
 
-  const toolInput = String(userId || "");
-  const result = await tool.invoke(toolInput);
+  try {
+    // Validate arguments against schema
+    const validatedArgs = toolDef.schema.parse(toolCall.args);
 
-  return {
-    isFinal: false,
-    toolMessage: new ToolMessage({
-      tool_call_id: toolCall.id,
-      content: typeof result === "string" ? result : JSON.stringify(result),
-    }),
-  };
+    // Execute the tool
+    const result = await toolDef.execute(validatedArgs);
+
+    return {
+      isFinal: false,
+      toolMessage: new ToolMessage({
+        tool_call_id: toolCall.id,
+        content: typeof result === "string" ? result : JSON.stringify(result),
+      }),
+    };
+  } catch (error) {
+    return {
+      isFinal: false,
+      toolMessage: new ToolMessage({
+        tool_call_id: toolCall.id,
+        content: JSON.stringify({
+          error: error.message,
+          success: false,
+        }),
+      }),
+    };
+  }
 };
 
 export const executeToolLoop = async (modelWithTool, messages, userId) => {
