@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { ThemeToggle } from "../components/theme-toggle.jsx";
+import { MarkdownText } from "../components/markdown-text.jsx";
 
 const API = "http://localhost:3000";
 
@@ -706,7 +707,9 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                                 : "border-slate-200 bg-white"
                           }`}
                         >
-                          <p>{msg.message}</p>
+                          <p>
+                            <MarkdownText text={msg.message} />
+                          </p>
                         </div>
                         <div
                           className={`mt-1 flex gap-2 text-[11px] ${isDark ? "text-slate-400" : "text-slate-600"} ${msg.responseActor === "ADMIN" ? "justify-end" : "justify-start"}`}
@@ -1016,7 +1019,9 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                             </div>
                           ) : (
                             <>
-                              <p>{note.message}</p>
+                              <p>
+                                <MarkdownText text={note.message} />
+                              </p>
                               <div className="mt-1 flex gap-2">
                                 <button
                                   onClick={() => handleStartEditNote(note)}
@@ -1093,7 +1098,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                           : "border-slate-300 bg-slate-50"
                       }`}
                     >
-                      {editedDraft || aiDraft}
+                      <MarkdownText text={editedDraft || aiDraft} />
                     </div>
                   )}
                 </div>
@@ -1168,7 +1173,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                                 : "bg-slate-200 text-slate-900"
                           }`}
                         >
-                          {msg.content}
+                          <MarkdownText text={msg.content} />
                         </div>
                       </div>
                     ))
