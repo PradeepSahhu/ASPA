@@ -3,6 +3,14 @@ import { ApiResponse } from "../utility/api.response.js";
 import { API_CODE } from "../utility/constants/api.constants.js";
 import prisma from "../utility/database/index.js";
 
+const NOTE_VISIBILITY = {
+  ALL_ADMINS: "ADMIN",
+  PRIVATE: "PRIVATE",
+};
+
+const isValidVisibility = (visibility) =>
+  Object.values(NOTE_VISIBILITY).includes(visibility);
+
 const CreateTicketNote = async (req, res) => {
   try {
     const admin = req.admin;
@@ -21,6 +29,17 @@ const CreateTicketNote = async (req, res) => {
           new ApiError(
             API_CODE.BAD_REQUEST,
             "ticketId and message are required",
+          ),
+        );
+    }
+
+    if (!isValidVisibility(visibility)) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(
+          new ApiError(
+            API_CODE.BAD_REQUEST,
+            "visibility must be either ADMIN or PRIVATE",
           ),
         );
     }
@@ -92,7 +111,13 @@ const GetTicketNotes = async (req, res) => {
     }
 
     const notes = await prisma.ticketNote.findMany({
-      where: { ticketId, visibility: "ADMIN" },
+      where: {
+        ticketId,
+        OR: [
+          { visibility: NOTE_VISIBILITY.ALL_ADMINS },
+          { visibility: NOTE_VISIBILITY.PRIVATE, adminId: admin.id },
+        ],
+      },
       select: {
         id: true,
         ticketId: true,
@@ -126,7 +151,7 @@ const UpdateTicketNote = async (req, res) => {
   try {
     const admin = req.admin;
     const { noteId } = req.params;
-    const { message } = req.body;
+    const { message, visibility } = req.body;
 
     if (!admin) {
       return res
@@ -149,9 +174,37 @@ const UpdateTicketNote = async (req, res) => {
         .json(new ApiError(API_CODE.NOT_FOUND, "Note not found"));
     }
 
+    if (visibility !== undefined && !isValidVisibility(visibility)) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(
+          new ApiError(
+            API_CODE.BAD_REQUEST,
+            "visibility must be either ADMIN or PRIVATE",
+          ),
+        );
+    }
+
+    if (
+      note.visibility === NOTE_VISIBILITY.PRIVATE &&
+      note.adminId !== admin.id
+    ) {
+      return res
+        .status(API_CODE.FORBIDDEN)
+        .json(
+          new ApiError(
+            API_CODE.FORBIDDEN,
+            "Only the note owner can edit this private note",
+          ),
+        );
+    }
+
     const updatedNote = await prisma.ticketNote.update({
       where: { id: noteId },
-      data: { message: message.trim() },
+      data: {
+        message: message.trim(),
+        ...(visibility !== undefined ? { visibility } : {}),
+      },
       select: {
         id: true,
         ticketId: true,
@@ -202,6 +255,20 @@ const DeleteTicketNote = async (req, res) => {
       return res
         .status(API_CODE.NOT_FOUND)
         .json(new ApiError(API_CODE.NOT_FOUND, "Note not found"));
+    }
+
+    if (
+      note.visibility === NOTE_VISIBILITY.PRIVATE &&
+      note.adminId !== admin.id
+    ) {
+      return res
+        .status(API_CODE.FORBIDDEN)
+        .json(
+          new ApiError(
+            API_CODE.FORBIDDEN,
+            "Only the note owner can delete this private note",
+          ),
+        );
     }
 
     await prisma.ticketNote.delete({ where: { id: noteId } });

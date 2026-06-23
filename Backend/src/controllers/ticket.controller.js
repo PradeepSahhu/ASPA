@@ -443,7 +443,12 @@ const GetTicketDetail = async (req, res) => {
     if (req.admin) {
       ticketSelect.aiDraft = true;
       ticketSelect.notes = {
-        where: { visibility: "ADMIN" },
+        where: {
+          OR: [
+            { visibility: "ADMIN" },
+            { visibility: "PRIVATE", adminId: req.admin.id },
+          ],
+        },
         select: {
           id: true,
           message: true,

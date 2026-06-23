@@ -106,9 +106,11 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const [updatingPriority, setUpdatingPriority] = useState(false);
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
+  const [newNoteVisibility, setNewNoteVisibility] = useState("ADMIN");
   const [isNotesLoading, setIsNotesLoading] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState("");
   const [editingNoteText, setEditingNoteText] = useState("");
+  const [editingNoteVisibility, setEditingNoteVisibility] = useState("ADMIN");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState("");
   const [llmChat, setLlmChat] = useState([]);
@@ -303,11 +305,12 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
         body: JSON.stringify({
           ticketId,
           message: newNote,
-          visibility: "ADMIN",
+          visibility: newNoteVisibility,
         }),
       });
       if (res.ok) {
         setNewNote("");
+        setNewNoteVisibility("ADMIN");
         fetchNotes();
       }
     } catch (error) {
@@ -318,6 +321,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const handleStartEditNote = (note) => {
     setEditingNoteId(note.id);
     setEditingNoteText(note.message || "");
+    setEditingNoteVisibility(note.visibility || "ADMIN");
   };
 
   const handleSaveNote = async () => {
@@ -328,11 +332,15 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: editingNoteText }),
+        body: JSON.stringify({
+          message: editingNoteText,
+          visibility: editingNoteVisibility,
+        }),
       });
       if (res.ok) {
         setEditingNoteId("");
         setEditingNoteText("");
+        setEditingNoteVisibility("ADMIN");
         fetchNotes();
       }
     } catch (error) {
@@ -358,6 +366,11 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
     } finally {
       setDeletingNoteId("");
     }
+  };
+
+  const noteVisibilityLabel = (visibility) => {
+    if (visibility === "PRIVATE") return "Private";
+    return "All Admins";
   };
 
   const handleLlmChat = async () => {
@@ -1071,11 +1084,26 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                           key={note.id}
                           className={`rounded-lg border-l-4 border-amber-500 px-2 py-1.5 text-xs ${isDark ? "bg-amber-600/10" : "bg-amber-50"}`}
                         >
-                          <p className="font-semibold mb-0.5">
-                            {note.admin?.name || "Admin"}
-                          </p>
                           {editingNoteId === note.id ? (
                             <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-semibold mb-0.5">
+                                  {note.admin?.name || "Admin"}
+                                </p>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    editingNoteVisibility === "PRIVATE"
+                                      ? isDark
+                                        ? "bg-slate-800 text-slate-200"
+                                        : "bg-slate-200 text-slate-700"
+                                      : isDark
+                                        ? "bg-blue-900/60 text-blue-200"
+                                        : "bg-blue-100 text-blue-700"
+                                  }`}
+                                >
+                                  {noteVisibilityLabel(editingNoteVisibility)}
+                                </span>
+                              </div>
                               <textarea
                                 value={editingNoteText}
                                 onChange={(e) =>
@@ -1083,6 +1111,18 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                                 }
                                 className={`w-full h-14 rounded-md border px-2 py-1 text-xs outline-none resize-none ${inputClass}`}
                               />
+                              <select
+                                value={editingNoteVisibility}
+                                onChange={(e) =>
+                                  setEditingNoteVisibility(e.target.value)
+                                }
+                                className={`w-full rounded-md border px-2 py-1 text-xs outline-none ${inputClass}`}
+                              >
+                                <option value="ADMIN">
+                                  Visible to all admins
+                                </option>
+                                <option value="PRIVATE">Keep private</option>
+                              </select>
                               <div className="flex gap-2">
                                 <button
                                   onClick={handleSaveNote}
@@ -1097,6 +1137,7 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                                   onClick={() => {
                                     setEditingNoteId("");
                                     setEditingNoteText("");
+                                    setEditingNoteVisibility("ADMIN");
                                   }}
                                   className="rounded-md bg-slate-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-slate-400"
                                 >
@@ -1106,6 +1147,24 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                             </div>
                           ) : (
                             <>
+                              <div className="mb-1 flex items-center justify-between gap-2">
+                                <p className="font-semibold mb-0.5">
+                                  {note.admin?.name || "Admin"}
+                                </p>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    note.visibility === "PRIVATE"
+                                      ? isDark
+                                        ? "bg-slate-800 text-slate-200"
+                                        : "bg-slate-200 text-slate-700"
+                                      : isDark
+                                        ? "bg-blue-900/60 text-blue-200"
+                                        : "bg-blue-100 text-blue-700"
+                                  }`}
+                                >
+                                  {noteVisibilityLabel(note.visibility)}
+                                </span>
+                              </div>
                               <p>
                                 <MarkdownText text={note.message} />
                               </p>
@@ -1140,6 +1199,14 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
                       placeholder="Add admin note..."
                       className={`w-full h-16 rounded-md border px-2 py-1 text-xs outline-none resize-none ${inputClass}`}
                     />
+                    <select
+                      value={newNoteVisibility}
+                      onChange={(e) => setNewNoteVisibility(e.target.value)}
+                      className={`w-full rounded-md border px-2 py-1 text-xs outline-none ${inputClass}`}
+                    >
+                      <option value="ADMIN">Visible to all admins</option>
+                      <option value="PRIVATE">Keep private</option>
+                    </select>
                     <button
                       onClick={handleAddNote}
                       disabled={!newNote.trim()}
