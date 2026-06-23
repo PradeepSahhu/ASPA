@@ -249,7 +249,7 @@ const OverridePriority = async (req, res) => {
         category: true,
         priorityScore: true,
         status: true,
-        updatedAt: true,
+        updatedDate: true,
       },
     });
 
@@ -275,10 +275,78 @@ const OverridePriority = async (req, res) => {
   }
 };
 
+const GetTicketDetail = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+
+    if (!ticketId) {
+      return res
+        .status(API_CODE.BAD_REQUEST)
+        .json(new ApiError(API_CODE.BAD_REQUEST, "ticketId is required"));
+    }
+
+    const ticketSelect = {
+      id: true,
+      header: true,
+      detailDescription: true,
+      status: true,
+      category: true,
+      priorityScore: true,
+      createdDate: true,
+      updatedDate: true,
+      author: {
+        select: { id: true, name: true, email: true },
+      },
+    };
+
+    if (req.admin) {
+      ticketSelect.notes = {
+        where: { visibility: "ADMIN" },
+        select: {
+          id: true,
+          message: true,
+          visibility: true,
+          adminId: true,
+          admin: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+        orderBy: { id: "desc" },
+      };
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: ticketSelect,
+    });
+
+    if (!ticket) {
+      return res
+        .status(API_CODE.NOT_FOUND)
+        .json(new ApiError(API_CODE.NOT_FOUND, "Ticket not found"));
+    }
+
+    return res
+      .status(API_CODE.ACCEPTED)
+      .json(new ApiResponse(API_CODE.ACCEPTED, ticket, "success"));
+  } catch (error) {
+    console.error("Error fetching ticket detail:", error);
+    return res
+      .status(API_CODE.INTERNAL_SERVER_ERROR)
+      .json(
+        new ApiError(
+          API_CODE.INTERNAL_SERVER_ERROR,
+          "Something went wrong while fetching ticket detail",
+        ),
+      );
+  }
+};
+
 export {
   CreateNewTicket,
   updateCategory,
   GetAuthorTickets,
   GetAllTickets,
   OverridePriority,
+  GetTicketDetail,
 };

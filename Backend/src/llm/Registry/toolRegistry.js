@@ -3,6 +3,7 @@ import { GetAuthorInfo, GetAuthorBooks } from "../Tools/Database.tool.js";
 import { constFinalAnswerTool } from "../Tools/finalAnswer.tool.js";
 import { AnalyzeTicketPriority } from "../Tools/AnalyzeTicketPriority.tool.js";
 import { UpdateTicketPriority } from "../Tools/UpdateTicketPriority.tool.js";
+import { UpdateTicketCategory } from "../Tools/UpdateTicketCategory.tool.js";
 
 // Registry of tool definitions (name => tool object with schema and execute)
 export const toolRegistry = {
@@ -11,6 +12,7 @@ export const toolRegistry = {
   [constFinalAnswerTool.name]: constFinalAnswerTool,
   [AnalyzeTicketPriority.name]: AnalyzeTicketPriority,
   [UpdateTicketPriority.name]: UpdateTicketPriority,
+  [UpdateTicketCategory.name]: UpdateTicketCategory,
 };
 
 // Helper to wrap plain tool objects for Langchain's bindTools

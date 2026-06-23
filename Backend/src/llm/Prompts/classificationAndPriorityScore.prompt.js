@@ -36,7 +36,9 @@ INSTRUCTIONS:
    - If no strong keyword match, default to Low
 
 3. UPDATING THE TICKET:
-   After priority analysis, use update_ticket_priority to save the score.
+   After priority analysis:
+   - Use update_ticket_category to save the classification category
+   - Use update_ticket_priority to save the priority score
 
 4. FINAL RESPONSE:
    After updating the ticket, call final_answer to confirm both:
@@ -90,6 +92,7 @@ Process the ticket systematically:
 1. Read the header and description
 2. Choose one classification category from the six allowed categories
 3. Call analyze_ticket_priority with header and description
-4. Call update_ticket_priority with ticketId and priorityScore
-5. Call final_answer with classification + priority score + admin override note
+4. Call update_ticket_category with ticketId and category
+5. Call update_ticket_priority with ticketId and priorityScore
+6. Call final_answer with classification + priority score + admin override note
 `;
