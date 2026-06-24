@@ -154,6 +154,10 @@ The root-level `railway.json` and `Dockerfile.railway` represent the older singl
 
 <img src="./Docs/Images/ER-diagram.png" alt="Database Schema" width="600"/>
 
+### Hosted Database
+
+<img src="./Docs/Images/hosted-database.png" alt="Hosted Database Setup" width="600"/>
+
 ### Prerequisites
 
 - PostgreSQL database running (either locally via Postgres.app or through Docker)
