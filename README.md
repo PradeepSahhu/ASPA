@@ -1,6 +1,95 @@
-## ASPA (Author Support Automation)
+## ASPA (Authors Support Platform and Automation)
 
 This is a monorepo for the ASPA Project, it contains both the Frontend and the Backend of the project. The project is built using React for the frontend and Node.js's Express for the backend.
+
+This is going to be pure technical README.md, here i will write about the technical details of the project, how to run it locally and
+
+## System Architecture
+
+<img src="./Docs/Images/system-architecture.png" alt="ASPA System Architecture" width="900"/>
+
+The Deployed URL : https://aspa-pradeepsahu.up.railway.app
+
+## Local Setup (Specific Steps)
+
+### Option A: Run with Docker Compose (recommended)
+
+Run all commands from the repository root (the folder that contains `docker-compose.yml`).
+
+1. Create backend env file:
+
+```bash
+cp Backend/.env.example Backend/.env
+```
+
+2. Update required values in `Backend/.env`:
+
+- `PORT=3000`
+- `DATABASE_URL` (for local compose, can be left as-is from compose override)
+- `REDIS_URL` (for local compose, can be left as-is from compose override)
+- `ACCESS_TOKEN_SECRET`
+- `DEEPSEEK_API_KEY`
+
+3. Start all services:
+
+```bash
+docker compose up --build
+```
+
+4. Open the app:
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
+
+5. Stop services:
+
+```bash
+docker compose down
+```
+
+Notes for Docker startup:
+
+- Backend container runs `npm run start:railway`, which automatically runs `prisma migrate deploy` and `prisma db seed` before starting the server.
+- This means migrations + seed run on backend container start/restart.
+- If `docker compose up` fails, make sure you are in the repo root, not `Backend/`.
+
+### Option B: Run locally without Docker
+
+Prerequisites:
+
+- Node.js 20+
+- Local Postgres and Redis running
+
+1. Backend:
+
+```bash
+cd Backend
+npm install
+npx prisma migrate deploy
+npx prisma db seed
+npm run dev
+```
+
+2. Worker (new terminal):
+
+```bash
+cd Backend
+npm run worker
+```
+
+3. Frontend (new terminal):
+
+```bash
+cd Frontend
+npm install
+npm run dev
+```
+
+4. Open frontend:
+
+- `http://localhost:5173`
+
+Default frontend API target is `http://localhost:3000` if `VITE_API_URL` is not set.
 
 ## Railway Deployment
 
@@ -8,11 +97,15 @@ This repository is now set up for Railway as two separate services:
 
 1. Backend service
 2. Frontend service
+3. Background Worker
+4. Postgres Database
+5. Redis Database
 
 Create two Railway services from the same GitHub repository and set each service's root directory:
 
 - Backend service root directory: `Backend`
 - Frontend service root directory: `Frontend`
+- Background Worker root directory: `BackgroundWorker`
 
 Each folder contains its own `railway.json` and `Dockerfile`, so Railway can build and deploy them independently.
 
@@ -48,6 +141,10 @@ The frontend reads `VITE_API_URL` at build time, so set it to the public backend
 3. Deploy the frontend service.
 4. Copy the frontend public domain and set it as `CLIENT_URL` and `ALLOWED_ORIGINS` in the backend service.
 5. Redeploy the backend service so CORS and Socket.IO allow the frontend domain.
+
+### Railway Deployment Screenshot
+
+<img src="./Docs/Images/railway-deployed.png" alt="Railway Deployment" width="900"/>
 
 ### Current root-level Railway files
 
@@ -194,13 +291,54 @@ npx prisma generate
 
 ## LLM Integration
 
-I will be using the langchain library to integrate with the DeepSeek LLM API (OpenAI Spec). the langchain provides two types of agents.
+This project uses LangChain with the DeepSeek API (OpenAI-compatible) for ticket analysis, categorization, prioritization, and draft generation.
 
-1. langchain agents : for fine grained control over the agent's behavior and the no tools by default.
+Reference:
+[LangChain Quickstart](https://docs.langchain.com/oss/javascript/langchain/quickstart#)
 
-2. deep agents : for a more out of the box experience with a set of pre defined tools and a more general agent behavior.(planning etc)
+### LLM Tools and Structure
 
-[Link](https://docs.langchain.com/oss/javascript/langchain/quickstart#)
-I will be using the deep agents for this project.
+LLM code lives under `Backend/src/llm` and is organized as follows:
+
+- `lllm.js`
+  - Core LLM invocation layer used by controllers and worker jobs.
+
+- `Prompts/`
+  - Prompt templates and prompt builders.
+  - Includes:
+    - `classificationAndPriorityScore.prompt.js`
+    - `Database.prompt.js`
+    - `generalInquiry.prompt.js`
+    - `generateDraft.prompt.js`
+    - `masterResponseRules.prompt.js`
+    - `ticketUserPrompt.builder.js`
+
+- `Tools/`
+  - Task-specific tool modules used by the LLM flow.
+  - Includes:
+    - `AnalyzeTicketPriority.tool.js`
+    - `Database.tool.js`
+    - `UpdateTicketCategory.tool.js`
+    - `UpdateTicketPriority.tool.js`
+    - `finalAnswer.tool.js`
+
+- `Registry/`
+  - Tool registration and discovery.
+  - Includes:
+    - `toolRegistry.js`
+
+- `Executor/`
+  - Central execution layer that runs selected tools.
+  - Includes:
+    - `toolExecutor.js`
+
+- `Resources/`
+  - Shared supporting resources used by the LLM layer.
 
 Redis and Vector DB using : https://console.upstash.com/redis/6353a65a-45de-4579-aa14-c876a41759fe
+
+The Deployed URL : https://aspa-pradeepsahu.up.railway.app
+
+### Future Enhancements
+
+- A more powerful LLM for the Admin with more tools so that admins can use the LLMs for more information and insights about the tickets and the authors. It will also provide a single source of information leading to better decision making and faster resolution of tickets.
