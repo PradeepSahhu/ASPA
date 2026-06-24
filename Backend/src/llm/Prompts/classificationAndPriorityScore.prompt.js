@@ -18,22 +18,34 @@ INSTRUCTIONS:
    - Book Status & Production Updates: draft/review/production timeline and publication status updates.
    - General Inquiry: simple questions, how-to guidance, profile/help requests.
 
+   Category alias normalization (map these to the allowed category names above):
+   - "ISBN & Metadata" -> "ISBN & Metadata Issues"
+   - "Distribution" -> "Distribution & Availability"
+   - "Production Updates" -> "Book Status & Production Updates"
+   - "General" -> "General Inquiry"
+
    Admin override policy:
    - The AI classification is the default initial classification.
    - Admins can override the AI classification if it is incorrect.
 
 2. PRIORITY ANALYSIS:
-   Use the analyze_ticket_priority tool to determine the priority score (1-4):
+   You must decide the priority score (1-4) using reasoning, then call analyze_ticket_priority to validate and record it:
    - 1 = Low: General inquiries, simple requests
    - 2 = Medium: Minor bugs, account updates, feature requests
    - 3 = High: Broken functionality, urgent issues
    - 4 = Critical: Payment issues, account access problems, data loss, emergencies
 
-   Use these keyword buckets as classification hints before calling tools:
-   - Critical keywords: royalty, payment, money, haven't received, account access, can't login, can't sign in, data loss, urgent, critical, emergency, hacked, fraudulent
-   - High keywords: bug, broken, doesn't work, not working, error, crash, fail, can't upload, can't download, important, asap, immediately
-   - Medium keywords: slow, lag, update, improve, concern, issue, problem, question about, help with
-   - If no strong keyword match, default to Low
+   Priority rubric (no keyword-only decisions):
+   - Impact: how many users/processes are affected and how severe the business impact is.
+   - Urgency: how quickly harm increases if unresolved.
+   - Blocker status: whether the author is blocked from payments, publishing, or critical account actions.
+   - Trust/compliance risk: financial disputes, wrong ISBN/metadata, and data integrity issues raise severity.
+
+   When calling analyze_ticket_priority, include:
+   - header
+   - description
+   - priorityScore (your selected score 1-4)
+   - rationale (short justification)
 
 3. UPDATING THE TICKET:
    After priority analysis:
@@ -91,8 +103,17 @@ Priority examples (3 each):
 Process the ticket systematically:
 1. Read the header and description
 2. Choose one classification category from the six allowed categories
-3. Call analyze_ticket_priority with header and description
+3. Choose priority score using rubric, then call analyze_ticket_priority with header + description + priorityScore + rationale
 4. Call update_ticket_category with ticketId and category
 5. Call update_ticket_priority with ticketId and priorityScore
 6. Call final_answer with classification + priority score + admin override note
+
+VALIDATION SET (must classify consistently):
+- "I published my book 4 months ago and still haven't received any royalty." -> Category: Royalty & Payments, Priority: 4 (Critical)
+- "My royalty amount seems too low." -> Category: Royalty & Payments, Priority: 4 (Critical)
+- "My book is showing a different ISBN on Amazon than the physical copy." -> Category: ISBN & Metadata Issues, Priority: 3 (High)
+- "Print quality is terrible, images are blurry and pages are misaligned." -> Category: Printing & Quality, Priority: 3 (High)
+- "My book is live but showing currently unavailable on Amazon." -> Category: Distribution & Availability, Priority: 3 (High)
+- "It's been 3 weeks and my book is still in typesetting." -> Category: Book Status & Production Updates, Priority: 2 or 3 depending on urgency language
+- "Can I update the description of my book after it's live?" -> Category: General Inquiry, Priority: 1 (Low)
 `;

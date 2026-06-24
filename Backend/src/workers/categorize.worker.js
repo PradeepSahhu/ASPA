@@ -6,6 +6,11 @@ import { LlmInvoke } from "../llm/lllm.js";
 import { ROLE } from "../utility/constants/role.constants.js";
 import { CLASSIFICATION_AND_PRIORITY_SCORE } from "../llm/Prompts/classificationAndPriorityScore.prompt.js";
 import { GENERATE_DRAFT_PROMPT } from "../llm/Prompts/generateDraft.prompt.js";
+import { GENERAL_INQUIRY_PROMPT } from "../llm/Prompts/generalInquiry.prompt.js";
+import {
+  buildCategorizeTicketPrompt,
+  buildDraftResponsePrompt,
+} from "../llm/Prompts/ticketUserPrompt.builder.js";
 
 const worker = new Worker(
   "ticket-processing",
@@ -57,6 +62,7 @@ const worker = new Worker(
           header: true,
           detailDescription: true,
           authorId: true,
+          category: true,
         },
       });
 
@@ -64,15 +70,15 @@ const worker = new Worker(
         throw new Error(`Ticket not found: ${ticketId}`);
       }
 
-      const userPrompt = `The author has submitted the following support ticket:
-
-Ticket Header: "${ticket.header}"
-Ticket Description: "${ticket.detailDescription}"
-
-Please generate a professional and helpful draft response for this ticket.`;
+      const userPrompt = buildDraftResponsePrompt(ticket);
+      const isGeneralInquiry = (ticket.category || "")
+        .toLowerCase()
+        .includes("general");
 
       const draftResponse = await callLLM({
-        systemPrompt: GENERATE_DRAFT_PROMPT,
+        systemPrompt: isGeneralInquiry
+          ? GENERAL_INQUIRY_PROMPT
+          : GENERATE_DRAFT_PROMPT,
         userPrompt,
       });
 
@@ -123,12 +129,7 @@ Please generate a professional and helpful draft response for this ticket.`;
       throw new Error(`Ticket not found: ${ticketId}`);
     }
 
-    const userPrompt = `TICKET TO PROCESS:
-Ticket ID: "${ticket.id}"
-Header: "${ticket.header}"
-Description: "${ticket.detailDescription}"
-
-Please assign a priority score and also the Category for this ticket and update it in DB using the tools.`;
+    const userPrompt = buildCategorizeTicketPrompt(ticket);
 
     await callLLM({
       systemPrompt: CLASSIFICATION_AND_PRIORITY_SCORE,

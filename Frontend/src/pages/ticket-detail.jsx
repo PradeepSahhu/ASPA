@@ -41,27 +41,6 @@ const getDescriptionPreview = (text, isExpanded) => {
   return words.slice(0, 200).join(" ") + "...";
 };
 
-const normalizeLLMContent = (payload) => {
-  if (payload === null || payload === undefined) return "No response from LLM";
-  if (typeof payload === "string") return payload;
-  if (typeof payload === "number" || typeof payload === "boolean") {
-    return String(payload);
-  }
-
-  if (typeof payload === "object") {
-    if (typeof payload.result === "string") return payload.result;
-    if (typeof payload.message === "string") return payload.message;
-
-    try {
-      return JSON.stringify(payload);
-    } catch {
-      return "No response from LLM";
-    }
-  }
-
-  return "No response from LLM";
-};
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const PRIORITIES = [
@@ -113,9 +92,6 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const [editingNoteVisibility, setEditingNoteVisibility] = useState("ADMIN");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState("");
-  const [llmChat, setLlmChat] = useState([]);
-
-  const [llmInput, setLlmInput] = useState("");
   const [activePanel, setActivePanel] = useState("info"); // info, llm
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [aiDraft, setAiDraft] = useState("");
@@ -371,33 +347,6 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
   const noteVisibilityLabel = (visibility) => {
     if (visibility === "PRIVATE") return "Private";
     return "All Admins";
-  };
-
-  const handleLlmChat = async () => {
-    if (!llmInput.trim()) return;
-    setLlmChat([...llmChat, { role: "user", content: llmInput }]);
-    try {
-      const res = await fetch(`${API}/llm/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          ticketId,
-          query: llmInput,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const llmText = normalizeLLMContent(data.response || data.data);
-        setLlmChat((prev) => [
-          ...prev,
-          { role: "assistant", content: llmText },
-        ]);
-      }
-    } catch (error) {
-      console.error("Error with LLM chat:", error);
-    }
-    setLlmInput("");
   };
 
   const handleSendDraft = async () => {
@@ -1303,51 +1252,19 @@ export function TicketDetailPage({ isDark, onToggleTheme }) {
             {/* LLM Chat Panel */}
             {activePanel === "llm" && (
               <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {llmChat.length === 0 ? (
-                    <p
-                      className={`text-xs text-center ${isDark ? "text-slate-400" : "text-slate-600"}`}
-                    >
-                      Ask LLM for analysis
-                    </p>
-                  ) : (
-                    llmChat.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-xs rounded-lg px-2 py-1.5 text-xs ${
-                            msg.role === "user"
-                              ? isDark
-                                ? "bg-purple-600/40 text-purple-100"
-                                : "bg-purple-100 text-purple-900"
-                              : isDark
-                                ? "bg-slate-700 text-slate-100"
-                                : "bg-slate-200 text-slate-900"
-                          }`}
-                        >
-                          <MarkdownText text={msg.content} />
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="space-y-2 border-t pt-3">
-                  <input
-                    value={llmInput}
-                    onChange={(e) => setLlmInput(e.target.value)}
-                    placeholder="Ask LLM..."
-                    className={`w-full rounded-md border px-2 py-1 text-xs outline-none ${inputClass}`}
-                    onKeyPress={(e) => e.key === "Enter" && handleLlmChat()}
-                  />
-                  <button
-                    onClick={handleLlmChat}
-                    className="w-full rounded-md bg-purple-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-500"
-                  >
-                    Send to LLM
-                  </button>
+                <div
+                  className={`rounded-md border p-3 text-xs leading-relaxed ${
+                    isDark
+                      ? "border-slate-700 bg-slate-950 text-slate-300"
+                      : "border-slate-300 bg-slate-50 text-slate-700"
+                  }`}
+                >
+                  <p>
+                    the idea behind it is it will be a super llm with all the
+                    accesses of our db to help the admin fix the issue, and also
+                    so that the admin don't even need to leave site. Leading to
+                    High Productivity and efficiency.
+                  </p>
                 </div>
               </div>
             )}
