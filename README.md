@@ -2,6 +2,57 @@
 
 This is a monorepo for the ASPA Project, it contains both the Frontend and the Backend of the project. The project is built using React for the frontend and Node.js's Express for the backend.
 
+## Railway Deployment
+
+This repository is now set up for Railway as two separate services:
+
+1. Backend service
+2. Frontend service
+
+Create two Railway services from the same GitHub repository and set each service's root directory:
+
+- Backend service root directory: `Backend`
+- Frontend service root directory: `Frontend`
+
+Each folder contains its own `railway.json` and `Dockerfile`, so Railway can build and deploy them independently.
+
+### Backend service settings
+
+- Root directory: `Backend`
+- Start command: use the Dockerfile default
+- Required environment variables:
+  - `PORT=3000`
+  - `DATABASE_URL=<your postgres connection string>`
+  - `REDIS_URL=<your redis connection string>`
+  - `ACCESS_TOKEN_SECRET=<your secret>`
+  - `CLIENT_URL=<your Railway frontend domain>`
+  - `ALLOWED_ORIGINS=<your Railway frontend domain>`
+  - `DEEPSEEK_API_KEY=<your api key>`
+
+The backend already uses `CLIENT_URL` and `ALLOWED_ORIGINS` for CORS and Socket.IO origin checks.
+
+### Frontend service settings
+
+- Root directory: `Frontend`
+- Start command: use the Dockerfile default
+- Required environment variables:
+  - `PORT=4173`
+  - `VITE_API_URL=<your Railway backend domain>`
+
+The frontend reads `VITE_API_URL` at build time, so set it to the public backend URL before deploying.
+
+### Recommended Railway flow
+
+1. Create the backend service first and deploy it.
+2. Copy the backend public domain and set it as `VITE_API_URL` in the frontend service.
+3. Deploy the frontend service.
+4. Copy the frontend public domain and set it as `CLIENT_URL` and `ALLOWED_ORIGINS` in the backend service.
+5. Redeploy the backend service so CORS and Socket.IO allow the frontend domain.
+
+### Current root-level Railway files
+
+The root-level `railway.json` and `Dockerfile.railway` represent the older single-service backend deployment. For a split Railway deployment, use the per-service setup under `Backend/` and `Frontend/`.
+
 ## Database
 
 <img src="./Docs/Images/ER-diagram.png" alt="Database Schema" width="600"/>
