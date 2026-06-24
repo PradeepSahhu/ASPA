@@ -339,8 +339,6 @@ LLM code lives under `Backend/src/llm` and is organized as follows:
 - `Resources/`
   - Shared supporting resources used by the LLM layer.
 
-Redis and Vector DB using : https://console.upstash.com/redis/6353a65a-45de-4579-aa14-c876a41759fe
-
 The Deployed URL : https://aspa-pradeepsahu.up.railway.app
 
 ### Future Enhancements

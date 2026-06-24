@@ -41,10 +41,6 @@ export const llmTest = async (req, res) => {
       ticketId,
     });
 
-    console.log(
-      `📤 Job QUEUED: ${job?.id} llm-chat (pending: ${await ticketQueue.getWaitingCount()})`,
-    );
-
     if (!job || !job.id) {
       return res
         .status(API_CODE.INTERNAL_SERVER_ERROR)

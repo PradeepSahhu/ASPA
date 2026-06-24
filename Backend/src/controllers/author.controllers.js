@@ -8,7 +8,6 @@ import { generateAccessToken } from "../utility/tokens/access.token.js";
 const AuthorLogin = async (req, res) => {
   const { email, password } = req.body;
 
-  console.log(email, password);
   if (!email || !password) {
     return res
       .status(API_CODE.BAD_REQUEST)

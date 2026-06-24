@@ -4,7 +4,6 @@ import "dotenv/config";
 const redisUrl = process.env.REDIS_URL;
 
 if (!redisUrl) {
-  console.log("The redis url is :", redisUrl);
   throw new Error("REDIS_URL is required");
 }
 

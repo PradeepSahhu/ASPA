@@ -71,7 +71,6 @@ const CreateNewTicket = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, createdTicket, "success"));
   } catch (error) {
-    console.error("Error creating ticket:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -114,7 +113,6 @@ const updateCategory = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, updatedTicket, "success"));
   } catch (error) {
-    console.error("Error updating ticket category:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -160,7 +158,6 @@ const GetAuthorTickets = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
   } catch (error) {
-    console.error("Error fetching author tickets:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -201,7 +198,6 @@ const GetAllTickets = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, tickets, "success"));
   } catch (error) {
-    console.error("Error fetching all tickets:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -276,7 +272,6 @@ const OverridePriority = async (req, res) => {
         ),
       );
   } catch (error) {
-    console.error("Error overriding ticket priority:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -342,7 +337,6 @@ const MarkTicketResolved = async (req, res) => {
         ),
       );
   } catch (error) {
-    console.error("Error marking ticket resolved:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -401,7 +395,6 @@ const UnresolveTicket = async (req, res) => {
         ),
       );
   } catch (error) {
-    console.error("Error unresolving ticket:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -477,7 +470,6 @@ const GetTicketDetail = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, ticket, "success"));
   } catch (error) {
-    console.error("Error fetching ticket detail:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -530,7 +522,6 @@ const AssignTicket = async (req, res) => {
         ),
       );
   } catch (error) {
-    console.error("Error assigning ticket:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(

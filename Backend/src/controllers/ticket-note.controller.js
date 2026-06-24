@@ -74,7 +74,6 @@ const CreateTicketNote = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, note, "Note created"));
   } catch (error) {
-    console.error("Error creating ticket note:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -135,7 +134,6 @@ const GetTicketNotes = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, notes, "success"));
   } catch (error) {
-    console.error("Error fetching ticket notes:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -221,7 +219,6 @@ const UpdateTicketNote = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, updatedNote, "Note updated"));
   } catch (error) {
-    console.error("Error updating ticket note:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(
@@ -277,7 +274,6 @@ const DeleteTicketNote = async (req, res) => {
       .status(API_CODE.ACCEPTED)
       .json(new ApiResponse(API_CODE.ACCEPTED, { id: noteId }, "Note deleted"));
   } catch (error) {
-    console.error("Error deleting ticket note:", error);
     return res
       .status(API_CODE.INTERNAL_SERVER_ERROR)
       .json(

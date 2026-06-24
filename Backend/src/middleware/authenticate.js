@@ -16,9 +16,6 @@ const Authenticate = async (req, _, next) => {
       throw new ApiError(401, "unauthorized");
     }
 
-    console.log(process.env.ACCESS_TOKEN_SECRET);
-    console.log("the token is : ", token);
-
     const decodedtoken = await jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET,
