@@ -10,10 +10,15 @@
     "dev": "npm run prisma:generate && nodemon ./src/server.js",
     "start": "node ./src/server.js",
     "start:railway": "npx prisma migrate deploy && node ./src/server.js",
+    "db:seed": "prisma db seed",
+    "db:migrate:seed": "prisma migrate deploy && prisma db seed",
     "prisma:generate": "prisma generate",
     "worker":"node src/workers/categorize.worker.js",
     "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@langchain/core": "^1.2.0",
