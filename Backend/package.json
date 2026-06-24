@@ -9,11 +9,11 @@
   "scripts": {
     "dev": "npm run prisma:generate && nodemon ./src/server.js",
     "start": "node ./src/server.js",
-    "start:railway": "npx prisma migrate deploy && node ./src/server.js",
+    "start:railway": "npx prisma migrate deploy && npx prisma db seed && node ./src/server.js",
     "db:seed": "prisma db seed",
     "db:migrate:seed": "prisma migrate deploy && prisma db seed",
     "prisma:generate": "prisma generate",
-    "worker":"node src/workers/categorize.worker.js",
+    "worker":"node src/workers/background.worker.js",
     "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

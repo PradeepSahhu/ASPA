@@ -15,7 +15,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/vite.config.js ./vite.config.js
