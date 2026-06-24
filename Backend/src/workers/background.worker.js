@@ -6,7 +6,7 @@ import { LlmInvoke } from "../llm/lllm.js";
 import { ROLE } from "../utility/constants/role.constants.js";
 import { CLASSIFICATION_AND_PRIORITY_SCORE } from "../llm/Prompts/classificationAndPriorityScore.prompt.js";
 import { GENERATE_DRAFT_PROMPT } from "../llm/Prompts/generateDraft.prompt.js";
-import { GENERAL_INQUIRY_PROMPT } from "../llm/Prompts/generalInquiry.prompt.js";
+import { BUSINESS_PROMPT } from "../llm/Prompts/generalInquiry.prompt.js";
 import {
   buildCategorizeTicketPrompt,
   buildDraftResponsePrompt,
@@ -77,7 +77,7 @@ const worker = new Worker(
 
       const draftResponse = await callLLM({
         systemPrompt: isGeneralInquiry
-          ? GENERAL_INQUIRY_PROMPT
+          ? BUSINESS_PROMPT
           : GENERATE_DRAFT_PROMPT,
         userPrompt,
       });

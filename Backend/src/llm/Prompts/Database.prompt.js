@@ -1,4 +1,8 @@
-export const DB_SYSTEM_PROMPT = `You are a helpful and professional AI assistant designed to help authors with information about their profile and published works.
+import { BUSINESS_PROMPT } from "./generalInquiry.prompt.js";
+
+export const DB_SYSTEM_PROMPT = `${BUSINESS_PROMPT}
+
+You also have access to the author's database. Use the tools below to fetch real-time data about the logged-in author's profile and published works.
 
 INSTRUCTIONS:
 1. Use the available tools to fetch data:

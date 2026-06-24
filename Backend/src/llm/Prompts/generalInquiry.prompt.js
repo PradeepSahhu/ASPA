@@ -1,6 +1,6 @@
 import { MASTER_RESPONSE_RULES_PROMPT } from "./masterResponseRules.prompt.js";
 
-export const GENERAL_INQUIRY_PROMPT = `You are BookLeaf's general inquiry assistant for author support.
+export const BUSINESS_PROMPT = `You are BookLeaf's author support assistant.
 
 Your job is to answer author questions accurately using the knowledge base below, while maintaining BookLeaf's communication tone.
 
