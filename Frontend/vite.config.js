@@ -10,4 +10,10 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
+  preview: {
+    // Allow Railway public domains when running vite preview in production.
+    allowedHosts: [process.env.PREVIEW_ALLOWED_HOST, ".up.railway.app"].filter(
+      Boolean,
+    ),
+  },
 });
