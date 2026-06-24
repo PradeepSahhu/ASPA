@@ -3,6 +3,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY Backend/package*.json ./
+COPY Backend/prisma ./prisma
+COPY Backend/prisma.config.ts ./prisma.config.ts
 RUN npm install
 
 COPY Backend/ ./
