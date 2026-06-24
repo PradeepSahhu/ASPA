@@ -5,6 +5,8 @@ import { AdminDashboardPage } from "./pages/admin-dashboard.jsx";
 import { TicketDetailPage } from "./pages/ticket-detail.jsx";
 import { ThemeToggle } from "./components/theme-toggle.jsx";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 function HomePage({ isDark, onToggleTheme }) {
   const pageClass = isDark
     ? "bg-[radial-gradient(circle_at_12%_12%,#12314f_0%,#06080d_52%)] text-slate-100"
@@ -43,7 +45,7 @@ function HomePage({ isDark, onToggleTheme }) {
     const endpoint = isAdmin ? "/admin/login" : "/author/login";
 
     try {
-      const response = await fetch(`http://localhost:3000${endpoint}`, {
+      const response = await fetch(`${API}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

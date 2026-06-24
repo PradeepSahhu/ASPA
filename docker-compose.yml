@@ -22,6 +22,53 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: aspa-backend
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://postgres:password@postgres:5432/bookleaf
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost:5173
+      ALLOWED_ORIGINS: http://localhost:5173
+      ACCESS_TOKEN_SECRET: change_me_in_env
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: aspa-worker
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    command: npm run worker
+    environment:
+      DATABASE_URL: postgres://postgres:password@postgres:5432/bookleaf
+      REDIS_URL: redis://redis:6379
+      ACCESS_TOKEN_SECRET: change_me_in_env
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3000
+    container_name: aspa-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:4173"
+
 volumes:
   postgres_data:
   redis_data:

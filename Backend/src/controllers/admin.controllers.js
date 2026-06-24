@@ -29,6 +29,7 @@ const AdminLogin = async (req, res) => {
   const options = {
     httpOnly: true,
     secure: true,
+    sameSite: process.env.COOKIE_SAME_SITE || "none",
   };
 
   const accessToken = await generateAccessToken(
@@ -125,6 +126,7 @@ const AdminLogout = async (req, res) => {
   const options = {
     httpOnly: true,
     secure: true,
+    sameSite: process.env.COOKIE_SAME_SITE || "none",
   };
 
   return res

@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import { ThemeToggle } from "../components/theme-toggle.jsx";
 import { MarkdownText } from "../components/markdown-text.jsx";
 
-const API = "http://localhost:3000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const actorColor = (actor) => {
   if (actor === "ADMIN") return "text-blue-400";

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "../components/theme-toggle.jsx";
 
-const API = "http://localhost:3000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const statusColor = (status) => {
   if (status === "OPEN") return "bg-emerald-600";
@@ -92,6 +92,15 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
       return matchesSearch && matchesCategory && matchesPriority;
     })
     .sort((left, right) => {
+      // Resolved tickets go to the bottom
+      const leftResolved = left.status === "RESOLVED" ? 1 : 0;
+      const rightResolved = right.status === "RESOLVED" ? 1 : 0;
+
+      if (leftResolved !== rightResolved) {
+        return leftResolved - rightResolved;
+      }
+
+      // For non-resolved, sort by priority descending
       const priorityDiff =
         (right.priorityScore || 0) - (left.priorityScore || 0);
 
@@ -99,6 +108,7 @@ export function AdminDashboardPage({ isDark, onToggleTheme }) {
         return priorityDiff;
       }
 
+      // Then by creation date descending
       return new Date(right.createdDate) - new Date(left.createdDate);
     });
 

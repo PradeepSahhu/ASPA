@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "../components/theme-toggle.jsx";
 
-const API = "http://localhost:3000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export function AuthorDashboardPage({ isDark, onToggleTheme }) {
   const shellClass = isDark

@@ -8,6 +8,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "npm run prisma:generate && nodemon ./src/server.js",
+    "start": "node ./src/server.js",
+    "start:railway": "npx prisma migrate deploy && node ./src/server.js",
     "prisma:generate": "prisma generate",
     "worker":"node src/workers/categorize.worker.js",
     "postinstall": "prisma generate",
