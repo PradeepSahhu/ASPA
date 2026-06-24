@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Link,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router-dom";
 import { AuthorDashboardPage } from "./pages/author-dashboard.jsx";
 import { AdminDashboardPage } from "./pages/admin-dashboard.jsx";
 import { TicketDetailPage } from "./pages/ticket-detail.jsx";
+import { AuthorSignupPage } from "./pages/author-signup.jsx";
+import { AdminSignupPage } from "./pages/admin-signup.jsx";
 import { ThemeToggle } from "./components/theme-toggle.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -129,6 +137,18 @@ function HomePage({ isDark, onToggleTheme }) {
               : `${isAdmin ? "Admin" : "Author"} Login`}
           </button>
         </form>
+
+        <p
+          className={`mt-4 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+        >
+          New here?{" "}
+          <Link
+            to={isAdmin ? "/signup/admin" : "/signup/author"}
+            className="font-semibold text-blue-500 hover:text-blue-400"
+          >
+            Create a {isAdmin ? "admin" : "author"} account
+          </Link>
+        </p>
       </section>
     </div>
   );
@@ -180,6 +200,24 @@ function App() {
             path="/:ticketId"
             element={
               <TicketDetailPage
+                isDark={isDark}
+                onToggleTheme={handleToggleTheme}
+              />
+            }
+          />
+          <Route
+            path="/signup/author"
+            element={
+              <AuthorSignupPage
+                isDark={isDark}
+                onToggleTheme={handleToggleTheme}
+              />
+            }
+          />
+          <Route
+            path="/signup/admin"
+            element={
+              <AdminSignupPage
                 isDark={isDark}
                 onToggleTheme={handleToggleTheme}
               />
