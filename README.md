@@ -344,3 +344,19 @@ The Deployed URL : https://aspa-pradeepsahu.up.railway.app
 ### Future Enhancements
 
 - A more powerful LLM for the Admin with more tools so that admins can use the LLMs for more information and insights about the tickets and the authors. It will also provide a single source of information leading to better decision making and faster resolution of tickets.
+
+### Questions:-
+
+1. Why i use the Knowledge Base in the Prompts and not build a RAG System?
+
+- The amount of data in the Knowledge Base is very small 2.5 pages of text, so it is not worth building a RAG system for this small amount of data. The LLM can easily handle this small amount of data in the prompt itself.
+
+- Also RAGs are best when the data is frequently updated and the LLM needs to be able to access the latest data. In the knowledge base the data is more from a business side and will mostly will remain more or less the same.
+
+2. What if we want to use dynamic Data in the future?
+
+- I have a resource folder set which i didn't push to the repo, which will contain the way for the LLM to access the resources (dynamic data) in the future. The LLM will be able to access the resources and use them in the prompts. The resources will be updated as and when required.
+
+3. Why don't i use the memory (long term memory) of the LLM? in the Chat Conversation?
+
+- Currently the LLM have user table and books table access, so it knows who is the user and about all this books etc. As per my assumption the chat conversation is usually not very long for the long term memory to be useful. (But can we do it?- Definitely Yes)
